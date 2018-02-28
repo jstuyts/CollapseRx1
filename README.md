@@ -1,149 +1,56 @@
-<img src="https://netflix.github.com/Hystrix/images/hystrix-logo-tagline-850.png">
+# CollapseRx1
 
-# Hystrix: Latency and Fault Tolerance for Distributed Systems
-
-[![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/PROJECTNAMEHERE.svg)]()
 [![][travis img]][travis]
-[![][maven img]][maven]
 [![][license img]][license]
-
-Hystrix is a latency and fault tolerance library designed to isolate points of access to remote systems, services and 3rd party libraries, stop cascading failure and enable resilience in complex distributed systems where failure is inevitable.
-
-## Full Documentation
-
-See the [Wiki](https://github.com/Netflix/Hystrix/wiki/) for full documentation, examples, operational details and other information.
-
-See the [Javadoc](http://netflix.github.com/Hystrix/javadoc) for the API.
 
 ## Communication
 
-- Google Group: [HystrixOSS](http://groups.google.com/d/forum/hystrixoss)
-- Twitter: [@HystrixOSS](http://twitter.com/HystrixOSS)
-- [GitHub Issues](https://github.com/Netflix/Hystrix/issues)
+- [GitHub Issues](https://github.com/jstuyts/CollapseRx1/issues)
 
 ## What does it do?
 
-#### 1) Latency and Fault Tolerance
-
-Stop cascading failures. Fallbacks and graceful degradation. Fail fast and rapid recovery. 
-
-Thread and semaphore isolation with circuit breakers. 
-
-#### 2) Realtime Operations
-
-Realtime monitoring and configuration changes. Watch service and property changes take effect immediately as they spread across a fleet. 
-
-Be alerted, make decisions, affect change and see results in seconds. 
-
-#### 3) Concurrency
+#### Concurrency
 
 Parallel execution. Concurrency aware request caching. Automated batching through request collapsing.
 
-## Hello World!
-
-Code to be isolated is wrapped inside the run() method of a HystrixCommand similar to the following:
-
-```java
-public class CommandHelloWorld extends HystrixCommand<String> {
-
-    private final String name;
-
-    public CommandHelloWorld(String name) {
-        super(HystrixCommandGroupKey.Factory.asKey("ExampleGroup"));
-        this.name = name;
-    }
-
-    @Override
-    protected String run() {
-        return "Hello " + name + "!";
-    }
-}
-```
-
-This command could be used like this:
-
-```java
-String s = new CommandHelloWorld("Bob").execute();
-Future<String> s = new CommandHelloWorld("Bob").queue();
-Observable<String> s = new CommandHelloWorld("Bob").observe();
-```
-
-More examples and information can be found in the [How To Use](https://github.com/Netflix/Hystrix/wiki/How-To-Use) section.
-
-Example source code can be found in the [hystrix-examples](https://github.com/Netflix/Hystrix/tree/master/hystrix-examples/src/main/java/com/netflix/hystrix/examples) module.
-
 ## Binaries
 
-Binaries and dependency information for Maven, Ivy, Gradle and others can be found at [http://search.maven.org](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20a%3A%22hystrix-core%22).
-
-Change history and version numbers => [CHANGELOG.md](https://github.com/Netflix/Hystrix/blob/master/CHANGELOG.md)
+Change history and version numbers => [CHANGELOG.md](https://github.com/jstuyts/CollapseRx1/blob/master/CHANGELOG.md)
 
 Example for Maven:
 
 ```xml
 <dependency>
-    <groupId>com.netflix.hystrix</groupId>
-    <artifactId>hystrix-core</artifactId>
+    <groupId>com.javathinker</groupId>
+    <artifactId>collpaserx1</artifactId>
     <version>x.y.z</version>
 </dependency>
 ```
 and for Ivy:
 
 ```xml
-<dependency org="com.netflix.hystrix" name="hystrix-core" rev="x.y.z" />
+<dependency org="com.javathinker" name="collapserx" rev="x.y.z" />
 ```
 
-If you need to download the jars instead of using a build system, create a Maven pom file like this with the desired version:
-
-```xml
-<?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.netflix.hystrix.download</groupId>
-	<artifactId>hystrix-download</artifactId>
-	<version>1.0-SNAPSHOT</version>
-	<name>Simple POM to download hystrix-core and dependencies</name>
-	<url>http://github.com/Netflix/Hystrix</url>
-	<dependencies>
-		<dependency>
-			<groupId>com.netflix.hystrix</groupId>
-			<artifactId>hystrix-core</artifactId>
-			<version>x.y.z</version>
-			<scope/>
-		</dependency>
-	</dependencies>
-</project>
-```
-
-Then execute:
-
-```
-mvn -f download-hystrix-pom.xml dependency:copy-dependencies
-```
-
-It will download hystrix-core-*.jar and its dependencies into ./target/dependency/.
-
-You need Java 6 or later.
+You need Java 8 or later.
 
 ## Build
 
 To build:
 
 ```
-$ git clone git@github.com:Netflix/Hystrix.git
-$ cd Hystrix/
+$ git clone git@github.com:jstuyts/CollapseRx1.git
+$ cd CollapseRx1/
 $ ./gradlew build
 ```
 
-Futher details on building can be found on the [Getting Started](https://github.com/Netflix/Hystrix/wiki/Getting-Started) page of the wiki.
-
 ## Run Demo
 
-To run a [demo app](https://github.com/Netflix/Hystrix/tree/master/hystrix-examples/src/main/java/com/netflix/hystrix/examples/demo/HystrixCommandDemo.java) do the following:
+To run a [demo app](https://github.com/jstuyts/CollapseRx1/tree/master/hystrix-examples/src/main/java/com/jstuyts/CollapseRx1/examples/demo/HystrixCommandDemo.java) do the following:
 
 ```
-$ git clone git@github.com:Netflix/Hystrix.git
-$ cd Hystrix/
+$ git clone git@github.com:jstuyts/CollapseRx1.git
+$ cd CollapseRx1/
 ./gradlew runDemo
 ```
 
@@ -168,18 +75,14 @@ Request => GetUserAccountCommand[SUCCESS][10ms], GetPaymentInformationCommand[SU
 Request => GetUserAccountCommand[FAILURE, FALLBACK_SUCCESS][6ms], GetPaymentInformationCommand[SUCCESS][11ms], GetUserAccountCommand[FAILURE, FALLBACK_SUCCESS, RESPONSE_FROM_CACHE][0ms]x2, GetOrderCommand[SUCCESS][153ms], CreditCardCommand[SUCCESS][1321ms]
 ```
 
-This demo simulates 4 different [HystrixCommand](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommand.java) implementations with failures, latency, timeouts and duplicate calls in a multi-threaded environment.
+This demo simulates 4 different [HystrixCommand](https://github.com/jstuyts/CollapseRx1/tree/master/hystrix-core/src/main/java/com/jstuyts/CollapseRx1/HystrixCommand.java) implementations with failures, latency, timeouts and duplicate calls in a multi-threaded environment.
 
-It logs the results of [HystrixRequestLog](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixRequestLog.java) and metrics from [HystrixCommandMetrics](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommandMetrics.java).
-
-## Dashboard
-
-The hystrix-dashboard component of this project has been deprecated and moved to [Netflix-Skunkworks/hystrix-dashboard](https://github.com/Netflix-Skunkworks/hystrix-dashboard). Please see the README there for more details including important security considerations.
+It logs the results of [HystrixRequestLog](https://github.com/jstuyts/CollapseRx1/tree/master/hystrix-core/src/main/java/com/jstuyts/CollapseRx1/HystrixRequestLog.java) and metrics from [HystrixCommandMetrics](https://github.com/jstuyts/CollapseRx1/tree/master/hystrix-core/src/main/java/com/jstuyts/CollapseRx1/HystrixCommandMetrics.java).
 
 
 ## Bugs and Feedback
 
-For bugs, questions and discussions please use the [GitHub Issues](https://github.com/Netflix/Hystrix/issues).
+For bugs, questions and discussions please use the [GitHub Issues](https://github.com/jstuyts/CollapseRx1/issues).
 
  
 ## LICENSE
@@ -199,14 +102,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 
-[travis]:https://travis-ci.org/Netflix/Hystrix
-[travis img]:https://travis-ci.org/Netflix/Hystrix.svg?branch=master
+[travis]:https://travis-ci.org/jstuyts/CollapseRx1
+[travis img]:https://travis-ci.org/jstuyts/CollapseRx1.svg?branch=master
 
-[maven]:http://search.maven.org/#search|gav|1|g:"com.netflix.hystrix"%20AND%20a:"hystrix-core"
-[maven img]:https://maven-badges.herokuapp.com/maven-central/com.netflix.hystrix/hystrix-core/badge.svg
-
-[release]:https://github.com/netflix/hystrix/releases
-[release img]:https://img.shields.io/github/release/netflix/hystrix.svg
+[release]:https://github.com/jstuyts/CollapseRx1/releases
+[release img]:https://img.shields.io/github/release/jstuyts/CollapseRx1.svg
 
 [license]:LICENSE-2.0.txt
 [license img]:https://img.shields.io/badge/License-Apache%202-blue.svg
