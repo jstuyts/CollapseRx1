@@ -1,6 +1,6 @@
 dependencies {
-    compileApi project(':hystrix-core')
-	compile project(':hystrix-serialization')
+    compileApi project(':collapserx1-core')
+	compile project(':collapserx1-serialization')
     provided 'javax.ws.rs:javax.ws.rs-api:2.0.1'
     testCompile 'junit:junit-dep:4.10'
     testCompile 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2:2.25.1'

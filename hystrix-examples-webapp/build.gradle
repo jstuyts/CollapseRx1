@@ -2,10 +2,10 @@ apply plugin: 'war'
 apply from: 'https://raw.github.com/akhikhl/gretty/master/pluginScripts/gretty.plugin'
 
 dependencies {
-    compileApi project(':hystrix-core')
-    compileApi project(':hystrix-examples')
-    compileApi project(':hystrix-request-servlet')
-    compileApi project(':hystrix-metrics-event-stream')
+    compileApi project(':collapserx1-core')
+    compileApi project(':collapserx1-examples')
+    compileApi project(':collapserx1-request-servlet')
+    compileApi project(':collapserx1-metrics-event-stream')
 }
 
 gretty {

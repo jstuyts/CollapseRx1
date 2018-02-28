@@ -7,7 +7,7 @@ sourceCompatibility = JavaVersion.VERSION_1_6
 targetCompatibility = JavaVersion.VERSION_1_6
 
 dependencies {
-    compileApi project(':hystrix-core')
+    compileApi project(':collapserx1-core')
 
 	//if we bump into the the 2.8.0 series, we are forced to use Java7
     compileApi 'com.fasterxml.jackson.core:jackson-core:2.7.5'
@@ -17,6 +17,6 @@ dependencies {
 	
     testCompile 'junit:junit-dep:4.10'
     testCompile 'org.mockito:mockito-all:1.9.5'
-	testCompile project(':hystrix-core').sourceSets.test.output
-	testCompile project(':hystrix-junit')
+	testCompile project(':collapserx1-core').sourceSets.test.output
+	testCompile project(':collapserx1-junit')
 }

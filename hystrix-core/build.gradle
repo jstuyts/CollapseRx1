@@ -7,7 +7,7 @@ dependencies {
     compile 'org.slf4j:slf4j-api:1.7.0'
     compileApi 'org.hdrhistogram:HdrHistogram:2.1.9'
     testCompile 'junit:junit-dep:4.10'
-    testCompile project(':hystrix-junit')
+    testCompile project(':collapserx1-junit')
 }
 
 
@@ -20,16 +20,16 @@ javadoc {
         doclet = "org.benjchristensen.doclet.DocletExclude"
         docletpath = [rootProject.file('./gradle/doclet-exclude.jar')]
         stylesheetFile = rootProject.file('./gradle/javadocStyleSheet.css')
-        windowTitle = "Hystrix Javadoc ${project.version}"
+        windowTitle = "CollapseRx1 Javadoc ${project.version}"
     }
-    options.addStringOption('top').value = '<a href="https://github.com/Netflix/Hystrix"><img width="92" height="79" border="0" align="left" src="http://netflix.github.com/Hystrix/images/hystrix-logo-small.png"></a><h2 class="title" style="padding-top:40px">Hystrix: Latency and Fault Tolerance for Distributed Systems</h2>'
+    options.addStringOption('top').value = '<a href="https://github.com/jstuyts/CollapseRx1">CollapseRx1</a><h2 class="title" style="padding-top:40px">CollapseRx1: request collapsing for RxJava 1</h2>'
 }
 
 jar {
     manifest {
-        name = 'hystrix-core'
-        instruction 'Bundle-Vendor', 'Netflix'
-        instruction 'Bundle-DocURL', 'https://github.com/Netflix/Hystrix'
+        name = 'collapserx1-core'
+        instruction 'Bundle-Vendor', 'Johan Stuyts'
+        instruction 'Bundle-DocURL', 'https://github.com/jstuyts/CollapseRx1'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
         instruction 'Eclipse-ExtensibleAPI', 'true'
         instruction 'Embed-Dependency', '*;scope=compile'

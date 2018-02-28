@@ -13,6 +13,11 @@ plugins {
     id 'net.saliman.cobertura' version '2.2.8'
 }
 
+wrapper {
+    gradleVersion = '4.5.1'
+    distributionType = Wrapper.DistributionType.ALL
+}
+
 ext {
     githubProjectName = rootProject.name
 }
@@ -31,12 +36,12 @@ subprojects {
     apply plugin: 'nebula.provided-base'
 	apply plugin: 'nebula.compile-api'
 	
-    sourceCompatibility = 1.6
-    targetCompatibility = 1.6
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 
 
 
-    group = "com.netflix.${githubProjectName}"
+    group = "com.javathinker.${githubProjectName}"
 
     eclipse {
         classpath {

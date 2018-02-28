@@ -1,6 +1,6 @@
 dependencies {
-    compileApi project(':hystrix-core')
-	compile project(':hystrix-serialization')
+    compileApi project(':collapserx1-core')
+	compile project(':collapserx1-serialization')
     compileApi 'io.reactivex:rxnetty:0.4.17'
     testCompile 'junit:junit-dep:4.10'
     testCompile 'org.powermock:powermock-easymock-release-full:1.5.5'

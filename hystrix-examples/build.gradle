@@ -1,7 +1,7 @@
 apply plugin: 'osgi'
 
 dependencies {
-    compileApi project(':hystrix-core')
+    compileApi project(':collapserx1-core')
     provided 'junit:junit-dep:4.10'
 }
 
@@ -12,9 +12,9 @@ task(runDemo, dependsOn: 'classes', type: JavaExec) {
 
 jar {
     manifest {
-        name = 'hystrix-examples'
-        instruction 'Bundle-Vendor', 'Netflix'
-        instruction 'Bundle-DocURL', 'https://github.com/Netflix/Hystrix'
+        name = 'collapsrx1-examples'
+        instruction 'Bundle-Vendor', 'Johan Stuyts'
+        instruction 'Bundle-DocURL', 'https://github.com/jstuyts/CollapseRx1'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
         instruction 'Eclipse-ExtensibleAPI', 'true'
     }

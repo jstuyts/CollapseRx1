@@ -1,8 +1,7 @@
-rootProject.name='hystrix'
+rootProject.name='collapserx1'
 include 'hystrix-core', \
 'hystrix-examples', \
 'hystrix-examples-webapp', \
-'hystrix-contrib/hystrix-clj', \
 'hystrix-contrib/hystrix-request-servlet', \
 'hystrix-contrib/hystrix-servo-metrics-publisher', \
 'hystrix-contrib/hystrix-metrics-event-stream', \
@@ -15,14 +14,17 @@ include 'hystrix-core', \
 'hystrix-contrib/hystrix-junit', \
 'hystrix-serialization'
 
-project(':hystrix-contrib/hystrix-clj').name = 'hystrix-clj'
-project(':hystrix-contrib/hystrix-request-servlet').name = 'hystrix-request-servlet'
-project(':hystrix-contrib/hystrix-servo-metrics-publisher').name = 'hystrix-servo-metrics-publisher'
-project(':hystrix-contrib/hystrix-metrics-event-stream').name = 'hystrix-metrics-event-stream'
-project(':hystrix-contrib/hystrix-metrics-event-stream-jaxrs').name = 'hystrix-metrics-event-stream-jaxrs'
-project(':hystrix-contrib/hystrix-rx-netty-metrics-stream').name = 'hystrix-rx-netty-metrics-stream'
-project(':hystrix-contrib/hystrix-codahale-metrics-publisher').name = 'hystrix-codahale-metrics-publisher'
-project(':hystrix-contrib/hystrix-yammer-metrics-publisher').name = 'hystrix-yammer-metrics-publisher'
-project(':hystrix-contrib/hystrix-network-auditor-agent').name = 'hystrix-network-auditor-agent'
-project(':hystrix-contrib/hystrix-javanica').name = 'hystrix-javanica'
-project(':hystrix-contrib/hystrix-junit').name = 'hystrix-junit'
+project(':hystrix-core').name = 'collapserx1-core'
+project(':hystrix-examples').name = 'collapserx1-examples'
+project(':hystrix-examples-webapp').name = 'collapserx1-examples-webapp'
+project(':hystrix-serialization').name = 'collapserx1-serialization'
+project(':hystrix-contrib/hystrix-request-servlet').name = 'collapserx1-request-servlet'
+project(':hystrix-contrib/hystrix-servo-metrics-publisher').name = 'collapserx1-servo-metrics-publisher'
+project(':hystrix-contrib/hystrix-metrics-event-stream').name = 'collapserx1-metrics-event-stream'
+project(':hystrix-contrib/hystrix-metrics-event-stream-jaxrs').name = 'collapserx1-metrics-event-stream-jaxrs'
+project(':hystrix-contrib/hystrix-rx-netty-metrics-stream').name = 'collapserx1-rx-netty-metrics-stream'
+project(':hystrix-contrib/hystrix-codahale-metrics-publisher').name = 'collapserx1-codahale-metrics-publisher'
+project(':hystrix-contrib/hystrix-yammer-metrics-publisher').name = 'collapserx1-yammer-metrics-publisher'
+project(':hystrix-contrib/hystrix-network-auditor-agent').name = 'collapserx1-network-auditor-agent'
+project(':hystrix-contrib/hystrix-javanica').name = 'collapserx1-javanica'
+project(':hystrix-contrib/hystrix-junit').name = 'collapserx1-junit'

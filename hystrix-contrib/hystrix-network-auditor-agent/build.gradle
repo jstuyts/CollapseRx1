@@ -9,7 +9,7 @@ dependencies {
                 "Agent-Class": "com.netflix.hystrix.contrib.networkauditor.HystrixNetworkAuditorAgent", 
                 "Can-Redefine-Classes": true, 
                 "Can-Retransform-Classes": true, 
-                "Boot-Class-Path": "hystrix-network-auditor-agent-" + version + ".jar",
+                "Boot-Class-Path": "collapserx1-network-auditor-agent-" + version + ".jar",
                 "Premain-Class": "com.netflix.hystrix.contrib.networkauditor.HystrixNetworkAuditorAgent")
         }
     }
