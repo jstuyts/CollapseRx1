@@ -7,7 +7,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.netflix.nebula:nebula-clojure-plugin:4.0.1'
+        classpath 'com.netflix.nebula:nebula-clojure-plugin:5.0.6'
     }
 }
 apply plugin: 'nebula.clojure' // this is a wrapper around clojuresque to make it behave well with other plugins
@@ -19,11 +19,11 @@ repositories {
 
 dependencies {
     compileApi project(':collapserx1-core')
-    compile 'org.clojure:clojure:1.7.0'
+    compile libraries.clojure
 }
 
 /*
- * Add Counterclockwise and include 'provided' dependencies
+ * Add Counterclockwise
  */
 eclipse {
   project {
@@ -39,7 +39,7 @@ eclipse {
 // or put the property in ~/.gradle/gradle.properties
 def nreplPort = 9999 // hardcoding to 9999 until figuring out how to make this not break Eclipse project import when the property isn't defined
 configurations { nrepl }
-dependencies { nrepl 'org.clojure:tools.nrepl:0.2.1' }
+dependencies { nrepl libraries.toolsNrepl }
 task nrepl(type: JavaExec) {
     classpath configurations.nrepl.asPath,
               project.sourceSets.main.clojure.srcDirs,

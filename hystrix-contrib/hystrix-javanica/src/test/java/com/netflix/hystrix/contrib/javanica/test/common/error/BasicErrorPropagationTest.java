@@ -26,6 +26,7 @@ import com.netflix.hystrix.exception.ExceptionNotWrappedByHystrix;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.HashMap;
@@ -34,9 +35,7 @@ import java.util.concurrent.TimeoutException;
 
 import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * Created by dmgcodevil
@@ -56,7 +55,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
 
     private UserService userService;
 
-    @MockitoAnnotations.Mock
+    @Mock
     private FailoverService failoverService;
 
     protected abstract UserService createUserService();

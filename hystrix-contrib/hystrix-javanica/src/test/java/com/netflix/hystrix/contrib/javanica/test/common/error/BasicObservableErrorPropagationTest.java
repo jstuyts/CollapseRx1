@@ -22,6 +22,7 @@ import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import rx.Observable;
 import rx.observers.TestSubscriber;
@@ -51,7 +52,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
 
     private UserService userService;
 
-    @MockitoAnnotations.Mock
+    @Mock
     private FailoverService failoverService;
 
     protected abstract UserService createUserService();

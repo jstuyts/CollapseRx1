@@ -3,20 +3,20 @@ repositories {
     jcenter()
 }
 
-sourceCompatibility = JavaVersion.VERSION_1_6
-targetCompatibility = JavaVersion.VERSION_1_6
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
 dependencies {
     compileApi project(':collapserx1-core')
 
 	//if we bump into the the 2.8.0 series, we are forced to use Java7
-    compileApi 'com.fasterxml.jackson.core:jackson-core:2.7.5'
-    compileApi 'com.fasterxml.jackson.core:jackson-databind:2.7.5'
-    compileApi 'com.fasterxml.jackson.core:jackson-annotations:2.7.5'
-    compile 'com.fasterxml.jackson.module:jackson-module-afterburner:2.7.5'
+    compileApi libraries.jacksonCore
+    compileApi libraries.jacksonDatabind
+    compileApi libraries.jacksonAnnotations
+    compile libraries.jacksonModuleAfterburner
 	
-    testCompile 'junit:junit-dep:4.10'
-    testCompile 'org.mockito:mockito-all:1.9.5'
+    testCompile libraries.junit
+    testCompile libraries.mockitoCore
 	testCompile project(':collapserx1-core').sourceSets.test.output
 	testCompile project(':collapserx1-junit')
 }

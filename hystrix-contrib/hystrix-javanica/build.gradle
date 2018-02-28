@@ -27,12 +27,12 @@ sourceSets {
 
 compileAjcTestJava {
 
-    sourceCompatibility = "1.6"
-    targetCompatibility = "1.6"
+    sourceCompatibility = "1.8"
+    targetCompatibility = "1.8"
 
     doLast {
         ant.taskdef(resource: "org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties", classpath: configurations.ajtools.asPath)
-        ant.iajc(source: "1.6", target: "1.6",
+        ant.iajc(source: "1.8", target: "1.8",
                 destDir: "${sourceSets.ajcTest.output.classesDir.absolutePath}", maxmem: "512m", fork: "true",
                 classpath: "${sourceSets.main.output.classesDir.absolutePath};${configurations.testCompile.asPath}")
                 {
@@ -47,8 +47,8 @@ compileAjcTestJava {
 }
 
 compileAjcJava {
-    sourceCompatibility = "1.6"
-    targetCompatibility = "1.6"
+    sourceCompatibility = "1.8"
+    targetCompatibility = "1.8"
 
     doLast {
         ant.taskdef(resource: "org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties", classpath: configurations.ajtools.asPath)
@@ -78,13 +78,6 @@ task ajcTest(type: Test) {
 
 check.dependsOn test, ajcTest
 
-
-ext {
-    aspectjVersion = '1.8.6'
-    springframeworkVesion = '4.3.2.RELEASE'
-}
-
-
 task ajcJar(type: Jar) {
     archiveName = "${project.name}" + "-ctw-${version}.jar"
     destinationDir = file("${buildDir}/libs")
@@ -95,25 +88,25 @@ assemble.dependsOn(jar, ajcJar)
 
 dependencies {
     compileApi project(':collapserx1-core')
-    ajtools "org.aspectj:aspectjtools:$aspectjVersion"
-    testRuntime "org.aspectj:aspectjrt:$aspectjVersion"
-    compileApi "org.aspectj:aspectjweaver:$aspectjVersion"
-    compile "org.aspectj:aspectjrt:$aspectjVersion"
+    ajtools libraries.aspectjtools
+    testRuntime libraries.aspectjrt
+    compileApi libraries.aspectjweaver
+    compile libraries.aspectjrt
 
-    compileApi 'com.google.guava:guava:15.0'
-    compile 'org.apache.commons:commons-lang3:3.1'
-    compileApi 'com.google.code.findbugs:jsr305:2.0.0'
-    compile 'org.ow2.asm:asm:5.0.4'
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile 'pl.pragmatists:JUnitParams:1.0.5'
+    compileApi libraries.guava
+    compile libraries.commonsLang
+    compileApi libraries.jsr305
+    compile libraries.asm
+    testCompile libraries.junit
+    testCompile libraries.junitparams
     testCompile project(':collapserx1-junit')
-    testCompile "org.springframework:spring-core:$springframeworkVesion"
-    testCompile "org.springframework:spring-context:$springframeworkVesion"
-    testCompile "org.springframework:spring-aop:$springframeworkVesion"
-    testCompile "org.springframework:spring-test:$springframeworkVesion"
-    testCompile 'cglib:cglib:3.1'
-    testCompile 'org.mockito:mockito-all:1.9.5'
-    testCompile 'log4j:log4j:1.2.17'
-    testCompile 'org.slf4j:slf4j-log4j12:1.7.7'
-    testCompile 'com.tngtech.java:junit-dataprovider:1.10.2'
+    testCompile libraries.springCore
+    testCompile libraries.springContext
+    testCompile libraries.springAop
+    testCompile libraries.springTest
+    testCompile libraries.cglib
+    testCompile libraries.mockitoCore
+    testCompile libraries.log4j
+    testCompile libraries.slf4jLog4j
+    testCompile libraries.junitDataprovider
 }

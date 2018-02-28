@@ -2,7 +2,7 @@ apply plugin: 'osgi'
 
 dependencies {
     compileApi project(':collapserx1-core')
-    provided 'junit:junit-dep:4.10'
+    compileOnly libraries.junit
 }
 
 task(runDemo, dependsOn: 'classes', type: JavaExec) {

@@ -1,4 +1,4 @@
 dependencies {
     compileApi project(':collapserx1-core')
-    provided 'javax.servlet:servlet-api:2.5'
+    compileOnly libraries.servletApi
 }

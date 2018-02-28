@@ -1,9 +1,10 @@
 dependencies {
     compileApi project(':collapserx1-core')
 	compile project(':collapserx1-serialization')
-    provided 'javax.ws.rs:javax.ws.rs-api:2.0.1'
-    testCompile 'junit:junit-dep:4.10'
-    testCompile 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2:2.25.1'
-	testCompile 'org.glassfish.jersey.media:jersey-media-sse:2.25.1'
+    compileOnly libraries.javaxWsRsApi
+    testCompile libraries.junit
+    testCompile libraries.jerseyHk2
+    testCompile libraries.jerseyTestFramewokrProviderGrizzly
+	testCompile libraries.jerseyMediaSse
 
 }

@@ -1,6 +1,6 @@
 dependencies {
     compileApi project(':collapserx1-core')
-    compileApi 'com.netflix.servo:servo-core:0.10.1'
-	testCompile 'junit:junit-dep:4.10'
-	testCompile 'org.mockito:mockito-all:1.9.5'
+    compileApi libraries.servoCore
+	testCompile libraries.junit
+	testCompile libraries.mockitoCore
 }

@@ -1,4 +1,4 @@
 dependencies {
     compileApi project(':collapserx1-core')
-    compileApi 'com.yammer.metrics:metrics-core:2.2.0'
+    compileApi libraries.metricsCoreYammer
 }
