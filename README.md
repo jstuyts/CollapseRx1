@@ -29,7 +29,7 @@ Example for Maven:
 and for Ivy:
 
 ```xml
-<dependency org="com.javathinker" name="collapserx" rev="x.y.z" />
+<dependency org="com.javathinker" name="collapserx1" rev="x.y.z" />
 ```
 
 You need Java 8 or later.
