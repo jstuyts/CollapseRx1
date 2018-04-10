@@ -134,265 +134,14 @@ HystrixObservable interface provides two methods: ```observe()``` - eagerly star
 
 **NOTE: EAGER mode is used by default**
 
-## Fallback
-
-Graceful degradation can be achieved by declaring name of fallback method in `@HystrixCommand` like below:
+**_Its important to remember that Hystrix command should be placed in the same class and have same method signature (optional parameter for failed execution exception)_**.
 
 ```java
-    @HystrixCommand(fallbackMethod = "defaultUser")
+    @HystrixCommand()
     public User getUserById(String id) {
         return userResource.getUserById(id);
     }
-
-    private User defaultUser(String id) {
-        return new User("def", "def");
-    }
 ```
-
-**_Its important to remember that Hystrix command and fallback should be placed in the same class and have same method signature (optional parameter for failed execution exception)_**.
-
-Fallback method can have any access modifier. Method `defaultUser` will be used to process fallback logic in a case of any errors. If you need to run fallback method `defaultUser` as separate Hystrix command then you need to annotate it with `HystrixCommand` annotation as below:
-```java
-    @HystrixCommand(fallbackMethod = "defaultUser")
-    public User getUserById(String id) {
-        return userResource.getUserById(id);
-    }
-
-    @HystrixCommand
-    private User defaultUser(String id) {
-        return new User();
-    }
-```
-
-If fallback method was marked with `@HystrixCommand` then this fallback method (_defaultUser_) also can has own fallback method, as in the example below:
-```java
-    @HystrixCommand(fallbackMethod = "defaultUser")
-    public User getUserById(String id) {
-        return userResource.getUserById(id);
-    }
-
-    @HystrixCommand(fallbackMethod = "defaultUserSecond")
-    private User defaultUser(String id) {
-        return new User();
-    }
-    
-    @HystrixCommand
-    private User defaultUserSecond(String id) {
-        return new User("def", "def");
-    }
-```
-
-Javanica provides an ability to get execution exception (exception thrown that caused the failure of a command) within a fallback is being executed. A fallback method signature can be extended with an additional parameter in order to get an exception thrown by a command. Javanica exposes execution exception through additional parameter of fallback method. Execution exception is derived by calling method getExecutionException() as in vanilla hystrix.
-
-Example:
-
-```java
-        @HystrixCommand(fallbackMethod = "fallback1")
-        User getUserById(String id) {
-            throw new RuntimeException("getUserById command failed");
-        }
-
-        @HystrixCommand(fallbackMethod = "fallback2")
-        User fallback1(String id, Throwable e) {
-            assert "getUserById command failed".equals(e.getMessage());
-            throw new RuntimeException("fallback1 failed");
-        }
-
-        @HystrixCommand(fallbackMethod = "fallback3")
-        User fallback2(String id) {
-            throw new RuntimeException("fallback2 failed");
-        }
-
-        @HystrixCommand(fallbackMethod = "staticFallback")
-        User fallback3(String id, Throwable e) {
-            assert "fallback2 failed".equals(e.getMessage());
-            throw new RuntimeException("fallback3 failed");
-        }
-
-        User staticFallback(String id, Throwable e) {
-            assert "fallback3 failed".equals(e.getMessage());
-            return new User("def", "def");
-        }
-        
-        // test
-        @Test
-        public void test() {
-        assertEquals("def", getUserById("1").getName());
-        }
-```
-As you can see, the additional ```Throwable``` parameter is not mandatory and can be omitted or specified.
-A fallback gets an exception thrown that caused a failure of parent, thus the ```fallback3``` gets exception thrown by ```fallback2```, no by ```getUserById``` command.
-
-### Async/Sync fallback.
-A fallback can be async or sync, at certain cases it depends on command execution type, below listed all possible uses :
-
-**Supported**
-
-case 1: sync command, sync fallback
-
-```java
-        @HystrixCommand(fallbackMethod = "fallback")
-        User getUserById(String id) {
-            throw new RuntimeException("getUserById command failed");
-        }
-
-        @HystrixCommand
-        User fallback(String id) {
-            return new User("def", "def");
-        }
-```
-
-case 2: async command, sync fallback
-
-```java
-        @HystrixCommand(fallbackMethod = "fallback")
-        Future<User> getUserById(String id) {
-            throw new RuntimeException("getUserById command failed");
-        }
-
-        @HystrixCommand
-        User fallback(String id) {
-            return new User("def", "def");
-        }
-```
-
-case 3: async command, async fallback
-```java
-        @HystrixCommand(fallbackMethod = "fallbackAsync")
-        Future<User> getUserById(String id) {
-            throw new RuntimeException("getUserById command failed");
-        }
-
-        @HystrixCommand
-        Future<User> fallbackAsync(String id) {
-            return new AsyncResult<User>() {
-                @Override
-                public User invoke() {
-                    return new User("def", "def");
-                }
-            };
-        }
-```
-
-**Unsupported(prohibited)**
-
-case 1: sync command, async fallback command. This case isn't supported because in the essence a caller does not get a future buy calling ```getUserById``` and future is provided by fallback isn't available for a caller anyway, thus execution of a command forces to complete ```fallbackAsync``` before a caller gets a result, having said it turns out there is no benefits of async fallback execution. But it can be convenient if a fallback is used for both sync and async commands, if you see this case is very helpful and will be nice to have then create issue to add support for this case.
-
-```java
-        @HystrixCommand(fallbackMethod = "fallbackAsync")
-        User getUserById(String id) {
-            throw new RuntimeException("getUserById command failed");
-        }
-
-        @HystrixCommand
-        Future<User> fallbackAsync(String id) {
-            return new AsyncResult<User>() {
-                @Override
-                public User invoke() {
-                    return new User("def", "def");
-                }
-            };
-        }
-```
-case 2: sync command, async fallback. This case isn't supported for the same reason as for the case 1.
-
-```java
-        @HystrixCommand(fallbackMethod = "fallbackAsync")
-        User getUserById(String id) {
-            throw new RuntimeException("getUserById command failed");
-        }
-
-        Future<User> fallbackAsync(String id) {
-            return new AsyncResult<User>() {
-                @Override
-                public User invoke() {
-                    return new User("def", "def");
-                }
-            };
-        }
-```
-
-Same restrictions are imposed on using observable feature in javanica.
-
-## Default fallback for class or concrete command
-This feature allows to define default fallback for the whole class or concrete command. If you have a batch of commands with exactly the same fallback logic you still have to define a fallback method for every command because fallback method should have exactly the same signature as command does, consider the following code:
-
-```java
-    public class Service {
-        @RequestMapping(value = "/test1")
-        @HystrixCommand(fallbackMethod = "fallback")
-        public APIResponse test1(String param1) {
-            // some codes here
-            return APIResponse.success("success");
-        }
-
-        @RequestMapping(value = "/test2")
-        @HystrixCommand(fallbackMethod = "fallback")
-        public APIResponse test2() {
-            // some codes here
-            return APIResponse.success("success");
-        }
-
-        @RequestMapping(value = "/test3")
-        @HystrixCommand(fallbackMethod = "fallback")
-        public APIResponse test3(ObjectRequest obj) {
-            // some codes here
-            return APIResponse.success("success");
-        }
-
-        private APIResponse fallback(String param1) {
-            return APIResponse.failed("Server is busy");
-        }
-
-        private APIResponse fallback() {
-            return APIResponse.failed("Server is busy");
-        }
-        
-        private APIResponse fallback(ObjectRequest obj) {
-            return APIResponse.failed("Server is busy");
-        }
-    }
-```
-
-Default fallback feature allows to engage DRY principle and get rid of redundancy:
-
-```java
-    @DefaultProperties(defaultFallback = "fallback")
-    public class Service {
-        @RequestMapping(value = "/test1")
-        @HystrixCommand
-        public APIResponse test1(String param1) {
-            // some codes here
-            return APIResponse.success("success");
-        }
-
-        @RequestMapping(value = "/test2")
-        @HystrixCommand
-        public APIResponse test2() {
-            // some codes here
-            return APIResponse.success("success");
-        }
-
-        @RequestMapping(value = "/test3")
-        @HystrixCommand
-        public APIResponse test3(ObjectRequest obj) {
-            // some codes here
-            return APIResponse.success("success");
-        }
-
-        private APIResponse fallback() {
-            return APIResponse.failed("Server is busy");
-        }
-    }
-```
-
-Default fallback method should not have any parameters except extra one to get execution exception and shouldn't throw any exceptions.
-Below fallbacks listed in descending order of priority:
-
-1. command fallback defined using `fallbackMethod` property of `@HystrixCommand`
-2. command default fallback defined using `defaultFallback` property of `@HystrixCommand`
-3. class default fallback defined using `defaultFallback` property of `@DefaultProperties`
-
 
 ## Error Propagation
 Based on [this](https://github.com/Netflix/Hystrix/wiki/How-To-Use#ErrorPropagation) description, `@HystrixCommand` has an ability to specify exceptions types which should be ignored.
@@ -404,7 +153,7 @@ Based on [this](https://github.com/Netflix/Hystrix/wiki/How-To-Use#ErrorPropagat
     }
 ```
 
-If `userResource.getUserById(id);` throws an exception that type is _BadRequestException_ then this exception will be wrapped in ``HystrixBadRequestException`` and re-thrown without triggering fallback logic. You don't need to do it manually, javanica will do it for you under the hood.
+If `userResource.getUserById(id);` throws an exception that type is _BadRequestException_ then this exception will be wrapped in ``HystrixBadRequestException`` and re-thrown. You don't need to do it manually, javanica will do it for you under the hood.
 
 It is worth noting that by default a caller will always get the root cause exception e.g. ``BadRequestException``, never ``HystrixBadRequestException`` or ``HystrixRuntimeException`` (except the case when executed code explicitly throws those exceptions).
 
@@ -418,21 +167,6 @@ Optionally this exception un-wrapping can be disabled for ``HystrixRuntimeExcept
         return userResource.getUserById(id);
     }
 ```
-
-*Note*: If command has a fallback then only first exception that triggers fallback logic will be propagated to caller. Example:
-
-```java
-class Service {
-    @HystrixCommand(fallbackMethod = "fallback")
-    Object command(Object o) throws CommandException {
-        throw new CommandException();
-    }
-    
-    @HystrixCommand
-    Object fallback(Object o) throws FallbackException {
-        throw new FallbackException();
-    }
-}
 
 // in client code
 {
@@ -614,7 +348,7 @@ Command properties can be set using @HystrixCommand's 'commandProperties' like b
 
 ```java
     @HystrixCommand(commandProperties = {
-            @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "500")
+            @HystrixProperty(name = "...", value = "...")
         })
     public User getUserById(String id) {
         return userResource.getUserById(id);
@@ -624,23 +358,21 @@ Command properties can be set using @HystrixCommand's 'commandProperties' like b
 Javanica dynamically sets properties using Hystrix ConfigurationManager.
 For the example above Javanica behind the scenes performs next action:
 ```java
-ConfigurationManager.getConfigInstance().setProperty("hystrix.command.getUserById.execution.isolation.thread.timeoutInMilliseconds", "500");
+ConfigurationManager.getConfigInstance().setProperty("...", "...");
 ```
-More about Hystrix command properties [command](https://github.com/Netflix/Hystrix/wiki/Configuration#wiki-CommandExecution) and [fallback](https://github.com/Netflix/Hystrix/wiki/Configuration#wiki-CommandFallback)
+More about Hystrix command properties [command](https://github.com/Netflix/Hystrix/wiki/Configuration#wiki-CommandExecution)
 
 ThreadPoolProperties can be set using @HystrixCommand's 'threadPoolProperties' like below:
 
 ```java
     @HystrixCommand(commandProperties = {
-            @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "500")
+            @HystrixProperty(name = "...", value = "...")
         },
                 threadPoolProperties = {
                         @HystrixProperty(name = "coreSize", value = "30"),
                         @HystrixProperty(name = "maxQueueSize", value = "101"),
                         @HystrixProperty(name = "keepAliveTimeMinutes", value = "2"),
-                        @HystrixProperty(name = "queueSizeRejectionThreshold", value = "15"),
-                        @HystrixProperty(name = "metrics.rollingStats.numBuckets", value = "12"),
-                        @HystrixProperty(name = "metrics.rollingStats.timeInMilliseconds", value = "1440")
+                        @HystrixProperty(name = "queueSizeRejectionThreshold", value = "15")
         })
     public User getUserById(String id) {
         return userResource.getUserById(id);
@@ -785,33 +517,6 @@ return response;
 To set collapser [properties](https://github.com/Netflix/Hystrix/wiki/Configuration#Collapser) use `@HystrixCollapser#collapserProperties`
 
 Read more about Hystrix request collapsing [here] (https://github.com/Netflix/Hystrix/wiki/How-it-Works#wiki-RequestCollapsing)
-
-**Collapser error processing**
-Batch command can have a fallback method.
-Example:
-
-```java
-    @HystrixCollapser(batchMethod = "getUserByIdsWithFallback")
-    public Future<User> getUserByIdWithFallback(String id) {
-        return null;
-    }
-        
-    @HystrixCommand(fallbackMethod = "getUserByIdsFallback")
-    public List<User> getUserByIdsWithFallback(List<String> ids) {
-        throw new RuntimeException("not found");
-    }
-
-
-    @HystrixCommand
-    private List<User> getUserByIdsFallback(List<String> ids) {
-        List<User> users = new ArrayList<User>();
-        for (String id : ids) {
-            users.add(new User(id, "name: " + id));
-        }
-        return users;
-    }
-```
-
 
 #Development Status and Future
 Please create an issue if you need a feature or you detected some bugs. Thanks

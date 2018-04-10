@@ -15,8 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.test.common.error;
 
-import com.netflix.hystrix.HystrixEventType;
-import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
@@ -30,8 +28,7 @@ import rx.observers.TestSubscriber;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 /**
@@ -74,11 +71,6 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
 
             testSubscriber.assertError(BadRequestException.class);
         } finally {
-            assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey(COMMAND_KEY);
-            // will not affect metrics
-            assertFalse(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            // and will not trigger fallback logic
             verify(failoverService, never()).getDefUser();
         }
     }
@@ -92,26 +84,15 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
 
             testSubscriber.assertError(NotFoundException.class);
         } finally {
-            assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey(COMMAND_KEY);
-            // will not affect metrics
-            assertFalse(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            // and will not trigger fallback logic
             verify(failoverService, never()).getDefUser();
         }
     }
 
-    @Test // don't expect any exceptions because fallback must be triggered
+    @Test
     public void testActivateUser() throws NotFoundException, ActivationException {
         try {
             userService.activateUser("1").toBlocking().single(); // this method always throws ActivationException
         } finally {
-            assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixInvokableInfo activateUserCommand = getHystrixCommandByKey("activateUser");
-            // will not affect metrics
-            assertTrue(activateUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            assertTrue(activateUserCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
-            // and will not trigger fallback logic
             verify(failoverService, atLeastOnce()).activate();
         }
     }
@@ -127,11 +108,6 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
             assertTrue(testSubscriber.getOnErrorEvents().size() == 1);
             assertTrue(testSubscriber.getOnErrorEvents().get(0).getCause() instanceof OperationException);
         } finally {
-            assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixInvokableInfo activateUserCommand = getHystrixCommandByKey("blockUser");
-            // will not affect metrics
-            assertTrue(activateUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            assertTrue(activateUserCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_FAILURE));
         }
     }
 
@@ -162,8 +138,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
                 ignoreExceptions = {
                         BadRequestException.class,
                         NotFoundException.class
-                },
-                fallbackMethod = "fallback")
+                })
         public Observable<User> getUserById(String id) throws NotFoundException {
             validate(id);
             if (!USERS.containsKey(id)) {
@@ -174,8 +149,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
 
 
         @HystrixCommand(
-                ignoreExceptions = {BadRequestException.class, NotFoundException.class},
-                fallbackMethod = "activateFallback")
+                ignoreExceptions = {BadRequestException.class, NotFoundException.class})
         public Observable<Void> activateUser(String id) throws NotFoundException, ActivationException {
             validate(id);
             if (!USERS.containsKey(id)) {
@@ -186,8 +160,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
         }
 
         @HystrixCommand(
-                ignoreExceptions = {BadRequestException.class, NotFoundException.class},
-                fallbackMethod = "blockUserFallback")
+                ignoreExceptions = {BadRequestException.class, NotFoundException.class})
         public Observable<Void> blockUser(String id) throws NotFoundException, OperationException {
             validate(id);
             if (!USERS.containsKey(id)) {
@@ -195,19 +168,6 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
             }
             // always throw this exception
             return Observable.error(new OperationException("user cannot be blocked"));
-        }
-
-        private Observable<User> fallback(String id) {
-            return failoverService.getDefUser();
-        }
-
-        private Observable<Void> activateFallback(String id) {
-            return failoverService.activate();
-        }
-
-        @HystrixCommand(ignoreExceptions = {RuntimeException.class})
-        private Observable<Void> blockUserFallback(String id) {
-            return Observable.error(new RuntimeOperationException("blockUserFallback has failed"));
         }
 
         private void validate(String val) throws BadRequestException {

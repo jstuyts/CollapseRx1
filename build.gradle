@@ -25,6 +25,7 @@ ext {
     aspectjVersion = '1.8.13'
     jacksonVersion = '2.9.4'
     jerseyVersion = '2.26'
+    jmhVersion = '1.20'
     slf4jVersion = '1.7.25'
     springframeworkVesion = '4.3.14.RELEASE'
     libraries = [
@@ -38,7 +39,6 @@ ext {
         commonsLang: 'org.apache.commons:commons-lang3:3.7',
         easymock: 'org.easymock:easymock:3.5.1',
         guava: 'com.google.guava:guava:24.0-jre',
-        hdrhistogram: 'org.hdrhistogram:HdrHistogram:2.1.10',
         jacksonAnnotations: "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion",
         jacksonCore: "com.fasterxml.jackson.core:jackson-core:$jacksonVersion",
         jacksonDatabind: "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion",
@@ -53,8 +53,6 @@ ext {
         junitDataprovider: 'com.tngtech.java:junit-dataprovider:1.13.1',
         junitparams: 'pl.pragmatists:JUnitParams:1.1.1',
         log4j: 'log4j:log4j:1.2.17',
-        metricsCoreDropwizard: 'io.dropwizard.metrics:metrics-core:4.0.2',
-        metricsCoreYammer: 'com.yammer.metrics:metrics-core:2.2.0',
         mockitoCore: 'org.mockito:mockito-core:2.15.0',
         powermockEasymockReleaseFull: 'org.powermock:powermock-easymock-release-full:1.6.4',
         rxjava: 'io.reactivex:rxjava:1.3.6',

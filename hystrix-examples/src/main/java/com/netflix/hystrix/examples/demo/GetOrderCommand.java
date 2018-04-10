@@ -21,15 +21,12 @@ import com.netflix.hystrix.HystrixCommandGroupKey;
 /**
  * Sample HystrixCommand simulating one that would fetch Order objects from a remote service or database.
  * <p>
- * This fails fast with no fallback and does not use request caching.
+ * This fails fast and does not use request caching.
  */
 public class GetOrderCommand extends HystrixCommand<Order> {
 
-    private final int orderId;
-
-    public GetOrderCommand(int orderId) {
+    public GetOrderCommand() {
         super(HystrixCommandGroupKey.Factory.asKey("Order"));
-        this.orderId = orderId;
     }
 
     @Override
@@ -41,7 +38,7 @@ public class GetOrderCommand extends HystrixCommand<Order> {
             // do nothing
         }
 
-        /* fail rarely ... but allow failure as this one has no fallback */
+        /* fail rarely ... but allow failure */
         if (Math.random() > 0.9999) {
             throw new RuntimeException("random failure loading order over network");
         }
@@ -57,7 +54,7 @@ public class GetOrderCommand extends HystrixCommand<Order> {
         }
 
         /* success ... create Order with data "from" the remote service response */
-        return new Order(orderId);
+        return new Order();
     }
 
 }

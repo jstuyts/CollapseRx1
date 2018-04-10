@@ -59,11 +59,6 @@
       The function to run for the command. The function may have any number of
       arguments. Required.
 
-    :fallback-fn
-
-      A function with the same args as :run-fn that calculates a fallback result when
-      the command fails. Optional, defaults to a function that throws UnsupportedOperationException.
-
     :cache-key-fn
 
       A function which the same args as :run-fn that calculates a cache key for the
@@ -296,14 +291,12 @@
 
 (def ^{:dynamic true :tag HystrixCommand} *command*
   "A dynamic var which is bound to the HystrixCommand instance during execution of
-  :run-fn and :fallback-fn.
+  :run-fn.
 
-  It's occasionally useful, especially for fallbacks, to base the result on the state of
-  the comand. The fallback might vary based on whether it was triggered by an application
-  error versus a timeout.
+  It's occasionally useful, to base the result on the state of the comand.
 
   Note: As always with dynamic vars be careful about scoping. This binding only holds for
-  the duration of the :run-fn or :fallback-fn.
+  the duration of the :run-fn.
   "
   nil)
 
@@ -359,7 +352,6 @@
 (defn- extract-hystrix-command-options
   [meta-map]
   (let [key-map {:hystrix/cache-key-fn    :cache-key-fn
-                 :hystrix/fallback-fn     :fallback-fn
                  :hystrix/group-key       :group-key
                  :hystrix/command-key     :command-key
                  :hystrix/thread-pool-key :thread-pool-key
@@ -388,11 +380,10 @@
       [term]
       ... execute service request and return vector of results ...)
 
-    ; Same as above, but add fallback and caching
+    ; Same as above, but add caching
     (defcommand search
       \"Fault tolerant search\"
-      {:hystrix/cache-key-fn identity
-       :hystrix/fallback-fn  (constantly []))}
+      {:hystrix/cache-key-fn identity)}
       [term]
       ... execute service request and return vector of results ...)
 
@@ -492,7 +483,6 @@
         batch-result))
 
     ; The search collapser is now defined. It has a collapser key of \"my-namespace/search\".
-    ; This is used for configuration and metrics.
 
     ; Syncrhonously execute the search collapser
     (search \"The Hudsucker Proxy\")
@@ -591,7 +581,6 @@
 
     Future
       (get [this] (.get future))
-      (get [this timeout timeunit] (.get future timeout timeunit))
       (isCancelled [this] (.isCancelled future))
       (isDone [this] (.isDone future))
       (cancel [this may-interrupt?] (.cancel future may-interrupt?))
@@ -688,7 +677,6 @@
   [definition]
   (-> definition
     ((required-fn :run-fn))
-    ((optional-fn :fallback-fn))
     ((optional-fn :cache-key-fn))
     ((optional-fn :init-fn))
 
@@ -698,8 +686,7 @@
 
 (defmethod instantiate* :command
   [{:keys [group-key command-key thread-pool-key
-           run-fn fallback-fn cache-key-fn
-           init-fn] :as def-map} & args]
+           run-fn cache-key-fn init-fn] :as def-map} & args]
   (let [setter (-> (HystrixCommand$Setter/withGroupKey group-key)
                  (.andCommandKey    command-key)
                  (.andThreadPoolKey thread-pool-key))
@@ -712,11 +699,6 @@
       (run []
         (binding [*command* this]
           (apply run-fn args)))
-      (getFallback []
-        (if fallback-fn
-          (binding [*command* this]
-            (apply fallback-fn args))
-          (throw (UnsupportedOperationException. "No :fallback-fn provided"))))
       (getCacheKey [] (if cache-key-fn
                         (apply cache-key-fn args))))))
 

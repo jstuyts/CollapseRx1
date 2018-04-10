@@ -15,20 +15,15 @@
  */
 package com.netflix.hystrix.examples.basic;
 
-import static org.junit.Assert.*;
-
-import org.junit.Test;
-
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicBooleanProperty;
 import com.netflix.config.DynamicPropertyFactory;
-import com.netflix.hystrix.HystrixCommand;
-import com.netflix.hystrix.HystrixCommandGroupKey;
-import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixCommandProperties;
+import com.netflix.hystrix.*;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
-import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Sample {@link HystrixCommand} pattern using a semaphore-isolated command
@@ -62,11 +57,6 @@ public class CommandFacadeWithPrimarySecondary extends HystrixCommand<String> {
     }
 
     @Override
-    protected String getFallback() {
-        return "static-fallback-" + id;
-    }
-
-    @Override
     protected String getCacheKey() {
         return String.valueOf(id);
     }
@@ -80,9 +70,7 @@ public class CommandFacadeWithPrimarySecondary extends HystrixCommand<String> {
                     .withGroupKey(HystrixCommandGroupKey.Factory.asKey("SystemX"))
                     .andCommandKey(HystrixCommandKey.Factory.asKey("PrimaryCommand"))
                     .andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey("PrimaryCommand"))
-                    .andCommandPropertiesDefaults(
-                            // we default to a 600ms timeout for primary
-                            HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(600)));
+                    .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()));
             this.id = id;
         }
 
@@ -103,9 +91,7 @@ public class CommandFacadeWithPrimarySecondary extends HystrixCommand<String> {
                     .withGroupKey(HystrixCommandGroupKey.Factory.asKey("SystemX"))
                     .andCommandKey(HystrixCommandKey.Factory.asKey("SecondaryCommand"))
                     .andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey("SecondaryCommand"))
-                    .andCommandPropertiesDefaults(
-                            // we default to a 100ms timeout for secondary
-                            HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(100)));
+                    .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()));
             this.id = id;
         }
 

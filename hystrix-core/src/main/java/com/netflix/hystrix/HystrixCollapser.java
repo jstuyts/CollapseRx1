@@ -24,7 +24,6 @@ import com.netflix.hystrix.collapser.RequestCollapserFactory;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import org.slf4j.Logger;
@@ -69,7 +68,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     private final RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType> collapserFactory;
     private final HystrixRequestCache requestCache;
     private final HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> collapserInstanceWrapper;
-    private final HystrixCollapserMetrics metrics;
 
     /**
      * The scope of request collapsing.
@@ -96,7 +94,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * Collapser scoped to {@link Scope#REQUEST} and default configuration.
      * 
      * @param collapserKey
-     *            {@link HystrixCollapserKey} that identifies this collapser and provides the key used for retrieving properties, request caches, publishing metrics etc.
+     *            {@link HystrixCollapserKey} that identifies this collapser and provides the key used for retrieving properties, request caches etc.
      */
     protected HystrixCollapser(HystrixCollapserKey collapserKey) {
         this(Setter.withCollapserKey(collapserKey).andScope(Scope.REQUEST));
@@ -112,14 +110,10 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      *            Fluent interface for constructor arguments
      */
     protected HystrixCollapser(Setter setter) {
-        this(setter.collapserKey, setter.scope, new RealCollapserTimer(), setter.propertiesSetter, null);
+        this(setter.collapserKey, setter.scope, new RealCollapserTimer(), setter.propertiesSetter);
     }
 
     /* package for tests */ HystrixCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder) {
-        this(collapserKey, scope, timer, propertiesBuilder, null);
-    }
-
-    /* package for tests */ HystrixCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder, HystrixCollapserMetrics metrics) {
         if (collapserKey == null || collapserKey.name().trim().equals("")) {
             String defaultKeyName = getDefaultNameFromClass(getClass());
             collapserKey = HystrixCollapserKey.Factory.asKey(defaultKeyName);
@@ -129,16 +123,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         this.collapserFactory = new RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType>(collapserKey, scope, timer, properties);
         this.requestCache = HystrixRequestCache.getInstance(collapserKey, HystrixPlugins.getInstance().getConcurrencyStrategy());
 
-        if (metrics == null) {
-            this.metrics = HystrixCollapserMetrics.getInstance(collapserKey, properties);
-        } else {
-            this.metrics = metrics;
-        }
-
         final HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> self = this;
-
-         /* strategy: HystrixMetricsPublisherCollapser */
-        HystrixMetricsPublisherFactory.createOrRetrievePublisherForCollapser(collapserKey, this.metrics, properties);
 
         /**
          * Used to pass public method invocation to the underlying implementation in a separate package while leaving the methods 'protected' in this class.
@@ -148,7 +133,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             @Override
             public Collection<Collection<CollapsedRequest<ResponseType, RequestArgumentType>>> shardRequests(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
                 Collection<Collection<CollapsedRequest<ResponseType, RequestArgumentType>>> shards = self.shardRequests(requests);
-                self.metrics.markShards(shards.size());
                 return shards;
             }
 
@@ -157,7 +141,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
                 final HystrixCommand<BatchReturnType> command = self.createCommand(requests);
 
                 command.markAsCollapsedCommand(this.getCollapserKey(), requests.size());
-                self.metrics.markBatch(requests.size());
 
                 return command.toObservable();
             }
@@ -186,7 +169,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     }
 
     /**
-     * Key of the {@link HystrixCollapser} used for properties, metrics, caches, reporting etc.
+     * Key of the {@link HystrixCollapser} used for properties, caches, reporting etc.
      * 
      * @return {@link HystrixCollapserKey} identifying this {@link HystrixCollapser} instance
      */
@@ -211,14 +194,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      */
     public Scope getScope() {
         return Scope.valueOf(collapserFactory.getScope().name());
-    }
-
-    /**
-     * Return the {@link HystrixCollapserMetrics} for this collapser
-     * @return {@link HystrixCollapserMetrics} for this collapser
-     */
-    public HystrixCollapserMetrics getMetrics() {
-        return metrics;
     }
 
     /**
@@ -276,7 +251,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * <p>
      * <ul>
      * <li>ALL {@link CollapsedRequest} objects must have either a response or exception set on them even if the response is NULL
-     * otherwise the user thread waiting on the response will think a response was never received and will either block indefinitely or timeout while waiting.</li>
+     * otherwise the user thread waiting on the response will think a response was never received and will block indefinitely.</li>
      * <ul>
      * <li>Setting a response is done via {@link CollapsedRequest#setResponse(Object)}</li>
      * <li>Setting an exception is done via {@link CollapsedRequest#setException(Exception)}</li>
@@ -389,7 +364,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
                 if (isRequestCacheEnabled) {
                     HystrixCachedObservable<ResponseType> fromCache = requestCache.get(cacheKey);
                     if (fromCache != null) {
-                        metrics.markResponseFromCache();
                         return fromCache.toObservable();
                     }
                 }
@@ -421,7 +395,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      *         Result of {@link HystrixCommand}{@code <BatchReturnType>} execution after passing through {@link #mapResponseToRequests} to transform the {@code <BatchReturnType>} into
      *         {@code <ResponseType>}
      * @throws HystrixRuntimeException
-     *             if an error occurs and a fallback cannot be retrieved
+     *             if an error occurs
      */
     public ResponseType execute() {
         try {
@@ -451,7 +425,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      *         Result of {@link HystrixCommand}{@code <BatchReturnType>} execution after passing through {@link #mapResponseToRequests} to transform the {@code <BatchReturnType>} into
      *         {@code <ResponseType>}
      * @throws HystrixRuntimeException
-     *             within an <code>ExecutionException.getCause()</code> (thrown by {@link Future#get}) if an error occurs and a fallback cannot be retrieved
+     *             within an <code>ExecutionException.getCause()</code> (thrown by {@link Future#get}) if an error occurs
      */
     public Future<ResponseType> queue() {
         return toObservable()
@@ -475,7 +449,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     }
 
     /**
-     * Clears all state. If new requests come in instances will be recreated and metrics started from scratch.
+     * Clears all state. If new requests come in instances will be recreated.
      */
     /* package */static void reset() {
         RequestCollapserFactory.reset();
@@ -574,7 +548,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
          * All optional arguments can be set via the chained methods.
          * 
          * @param collapserKey
-         *            {@link HystrixCollapserKey} that identifies this collapser and provides the key used for retrieving properties, request caches, publishing metrics etc.
+         *            {@link HystrixCollapserKey} that identifies this collapser and provides the key used for retrieving properties, request caches etc.
          * @return Setter for fluent interface via method chaining
          */
         public static Setter withCollapserKey(HystrixCollapserKey collapserKey) {

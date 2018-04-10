@@ -25,7 +25,6 @@ import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheResult;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
-import com.netflix.hystrix.exception.HystrixRuntimeException;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Collection;
@@ -67,30 +66,12 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
     }
 
     /**
-     * Gets fallback action.
-     *
-     * @return fallback action
-     */
-    protected CommandAction getFallbackAction() {
-        return commandActions.getFallbackAction();
-    }
-
-    /**
      * Gets collapsed requests.
      *
      * @return collapsed requests
      */
     protected Collection<HystrixCollapser.CollapsedRequest<Object, Object>> getCollapsedRequests() {
         return collapsedRequests;
-    }
-
-    /**
-     * Gets exceptions types which should be ignored.
-     *
-     * @return exceptions types
-     */
-    protected List<Class<? extends Throwable>> getIgnoreExceptions() {
-        return ignoreExceptions;
     }
 
     protected ExecutionType getExecutionType() {
@@ -131,10 +112,10 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
 
     /**
      * Executes an action. If an action has failed and an exception is ignorable then propagate it as HystrixBadRequestException
-     * otherwise propagate original exception to trigger fallback method.
+     * otherwise propagate original exception.
      * Note: If an exception occurred in a command directly extends {@link java.lang.Throwable} then this exception cannot be re-thrown
      * as original exception because HystrixCommand.run() allows throw subclasses of {@link java.lang.Exception}.
-     * Thus we need to wrap cause in RuntimeException, anyway in this case the fallback logic will be triggered.
+     * Thus we need to wrap cause in RuntimeException.
      *
      * @param action the action
      * @return result of command action execution
@@ -187,47 +168,6 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
          * @throws CommandActionExecutionException
          */
         abstract Object execute() throws CommandActionExecutionException;
-    }
-
-
-    /**
-     * Builder to create error message for failed fallback operation.
-     */
-    static class FallbackErrorMessageBuilder {
-        private StringBuilder builder = new StringBuilder("failed to process fallback");
-
-        static FallbackErrorMessageBuilder create() {
-            return new FallbackErrorMessageBuilder();
-        }
-
-        public FallbackErrorMessageBuilder append(CommandAction action, Throwable throwable) {
-            return commandAction(action).exception(throwable);
-        }
-
-        private FallbackErrorMessageBuilder commandAction(CommandAction action) {
-            if (action instanceof CommandExecutionAction || action instanceof LazyCommandExecutionAction) {
-                builder.append(": '").append(action.getActionName()).append("'. ")
-                        .append(action.getActionName()).append(" fallback is a hystrix command. ");
-            } else if (action instanceof MethodExecutionAction) {
-                builder.append(" is the method: '").append(action.getActionName()).append("'. ");
-            }
-            return this;
-        }
-
-        private FallbackErrorMessageBuilder exception(Throwable throwable) {
-            if (throwable instanceof HystrixBadRequestException) {
-                builder.append("exception: '").append(throwable.getCause().getClass())
-                        .append("' occurred in fallback was ignored and wrapped to HystrixBadRequestException.\n");
-            } else if (throwable instanceof HystrixRuntimeException) {
-                builder.append("exception: '").append(throwable.getCause().getClass())
-                        .append("' occurred in fallback wasn't ignored.\n");
-            }
-            return this;
-        }
-
-        public String build() {
-            return builder.toString();
-        }
     }
 
 }

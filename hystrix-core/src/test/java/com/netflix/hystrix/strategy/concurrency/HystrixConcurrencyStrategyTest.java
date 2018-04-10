@@ -15,26 +15,16 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.lang.IllegalStateException;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import rx.functions.Action1;
-import rx.functions.Func1;
-
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
-import com.netflix.hystrix.HystrixCommandProperties;
-import com.netflix.hystrix.HystrixRequestLog;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import rx.functions.Action1;
+import rx.functions.Func1;
+
+import static org.junit.Assert.assertTrue;
 
 public class HystrixConcurrencyStrategyTest {
     @Before
@@ -62,14 +52,12 @@ public class HystrixConcurrencyStrategyTest {
 
             @Override
             public String call(String s) {
-                System.out.println("Map => Commands: " + HystrixRequestLog.getCurrentRequest().getAllExecutedCommands());
                 return s;
             }
         }).toBlocking().forEach(new Action1<String>() {
 
             @Override
             public void call(String s) {
-                System.out.println("Result [" + s + "] => Commands: " + HystrixRequestLog.getCurrentRequest().getAllExecutedCommands());
             }
         });
     }
@@ -83,7 +71,6 @@ public class HystrixConcurrencyStrategyTest {
         @Override
         protected String run() throws Exception {
             if (HystrixRequestContext.isCurrentThreadInitialized()) {
-                System.out.println("Executing => Commands: " + HystrixRequestLog.getCurrentRequest().getAllExecutedCommands());
             }
             return "Hello";
         }
@@ -91,27 +78,8 @@ public class HystrixConcurrencyStrategyTest {
     }
 
     @Test
-    public void testThreadContextOnTimeout() {
-        final AtomicBoolean isInitialized = new AtomicBoolean();
-        new TimeoutCommand().toObservable()
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        isInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
-                    }
-                })
-                .materialize()
-                .toBlocking().single();
-
-        System.out.println("initialized = " + HystrixRequestContext.isCurrentThreadInitialized());
-        System.out.println("initialized inside onError = " + isInitialized.get());
-        assertEquals(true, isInitialized.get());
-    }
-
-    @Test
     public void testNoRequestContextOnSimpleConcurencyStrategyWithoutException() throws Exception {
         shutdownContextIfExists();
-        ConfigurationManager.getConfigInstance().setProperty("hystrix.command.default.requestLog.enabled", "false");
 
         new SimpleCommand().execute();
 
@@ -125,23 +93,4 @@ public class HystrixConcurrencyStrategyTest {
             HystrixRequestContext.getContextForCurrentThread().shutdown();
         }
     }
-    private static class DummyHystrixConcurrencyStrategy extends HystrixConcurrencyStrategy {}
-
-  public static class TimeoutCommand extends HystrixCommand<Void> {
-        static final HystrixCommand.Setter properties = HystrixCommand.Setter
-                .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TimeoutTest"))
-                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
-                        .withExecutionTimeoutInMilliseconds(50));
-
-        public TimeoutCommand() {
-            super(properties);
-        }
-
-        @Override
-        protected Void run() throws Exception {
-            Thread.sleep(500);
-            return null;
-        }
-    }
-
 }

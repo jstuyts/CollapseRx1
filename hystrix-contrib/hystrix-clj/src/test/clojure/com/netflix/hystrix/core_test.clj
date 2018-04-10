@@ -113,13 +113,6 @@
       (let [c (instantiate (normalize base-def) 99 42)]
         (is (= 141 (.execute c)))))
 
-    (testing "makes a HystrixCommand that executes :fallback-fn with given args"
-      (let [c (instantiate (normalize (assoc base-def
-                                             :run-fn (fn [& args] (throw (IllegalStateException.)))
-                                             :fallback-fn -))
-                           99 42)]
-        (is (= (- 99 42) (.execute c)))))
-
     (testing "makes a HystrixCommand that implements getCacheKey"
       (with-request-context
         (let [call-count (atom 0) ; make sure run-fn is only called once
@@ -244,17 +237,6 @@
                                                     (reset! captured *command*))))
             command (instantiate command-def)]
         (.execute command)
-        (is (identical? command @captured))))
-
-
-    (testing "this is bound while :fallback-fn is executing"
-      (let [captured (atom nil)
-            command-def (normalize (assoc base-def
-                                          :run-fn (fn [] (throw (Exception. "FALLBACK!")))
-                                          :fallback-fn (fn [] (reset! captured *command*))
-                                          ))
-            command (instantiate command-def)]
-        (.execute command)
         (is (identical? command @captured))))))
 
 (deftest test-collapser
@@ -307,15 +289,13 @@
 
 (defcommand my-fn-command
   "A doc string"
-  {:meta :data
-   :hystrix/fallback-fn (constantly 500)}
+  {:meta :data}
   [a b]
   (+ a b))
 
 (defcommand my-overload-fn-command
   "A doc string"
-  {:meta :data
-   :hystrix/fallback-fn (constantly 500)}
+  {:meta :data}
   ([a b]
      (+ a b))
   ([a b c]
@@ -328,8 +308,7 @@
       (is (map? hm))
       (is (= "com.netflix.hystrix.core-test/my-fn-command" (.name (:command-key hm))))
       (is (= "com.netflix.hystrix.core-test" (.name (:group-key hm))))
-      (is (= :data (-> #'my-fn-command meta :meta)))
-      (= 500 ((:fallback-fn hm))))
+      (is (= :data (-> #'my-fn-command meta :meta))))
     (testing "defines a functioning command"
       (is (= 99 (my-fn-command 88 11)))
       (is (= 100 (execute #'my-fn-command 89 11)))

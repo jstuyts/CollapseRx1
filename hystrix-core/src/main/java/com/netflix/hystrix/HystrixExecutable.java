@@ -15,14 +15,13 @@
  */
 package com.netflix.hystrix;
 
-import java.util.concurrent.Future;
-
-import rx.Observable;
-import rx.schedulers.Schedulers;
-
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
+import rx.Observable;
+import rx.schedulers.Schedulers;
+
+import java.util.concurrent.Future;
 
 /**
  * Common interface for executables ({@link HystrixCommand} and {@link HystrixCollapser}) so client code can treat them the same and combine in typed collections if desired.
@@ -37,7 +36,7 @@ public interface HystrixExecutable<R> extends HystrixInvokable<R> {
      * @return R
      *         Result of {@link HystrixCommand} execution
      * @throws HystrixRuntimeException
-     *             if an error occurs and a fallback cannot be retrieved
+     *             if an error occurs
      * @throws HystrixBadRequestException
      *             if the {@link HystrixCommand} instance considers request arguments to be invalid and needs to throw an error that does not represent a system failure
      */
@@ -54,7 +53,7 @@ public interface HystrixExecutable<R> extends HystrixInvokable<R> {
      * 
      * @return {@code Future<R>} Result of {@link HystrixCommand} execution
      * @throws HystrixRuntimeException
-     *             if an error occurs and a fallback cannot be retrieved
+     *             if an error occurs
      * @throws HystrixBadRequestException
      *             if the {@link HystrixCommand} instance considers request arguments to be invalid and needs to throw an error that does not represent a system failure
      */
@@ -75,13 +74,11 @@ public interface HystrixExecutable<R> extends HystrixInvokable<R> {
      * <p>
      * See https://github.com/Netflix/RxJava/wiki for more information.
      *
-     * @return {@code Observable<R>} that executes and calls back with the result of the command execution or a fallback if the command fails for any reason.
+     * @return {@code Observable<R>} that executes and calls back with the result of the command execution.
      * @throws HystrixRuntimeException
-     *             if a fallback does not exist
-     *             <p>
      *             <ul>
      *             <li>via {@code Observer#onError} if a failure occurs</li>
-     *             <li>or immediately if the command can not be queued (such as short-circuited, thread-pool/semaphore rejected)</li>
+     *             <li>or immediately if the command can not be queued (such as thread-pool/semaphore rejected)</li>
      *             </ul>
      * @throws HystrixBadRequestException
      *             via {@code Observer#onError} if invalid arguments or state were used representing a user failure, not a system failure

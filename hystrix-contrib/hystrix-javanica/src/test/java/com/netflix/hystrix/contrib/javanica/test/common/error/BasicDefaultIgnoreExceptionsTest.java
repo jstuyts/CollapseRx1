@@ -2,7 +2,6 @@ package com.netflix.hystrix.contrib.javanica.test.common.error;
 
 import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -41,19 +40,19 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
 
     @Ignore // https://github.com/Netflix/Hystrix/issues/993#issuecomment-229542203
     @Test(expected = BadRequestException.class)
-    public void testFallbackCommandInheritsDefaultIgnoreException() {
-        service.commandWithFallbackInheritsDefaultIgnoreExceptions();
+    public void testCommandInheritsDefaultIgnoreException() {
+        service.commandInheritsDefaultIgnoreExceptions2();
     }
 
     @Ignore // https://github.com/Netflix/Hystrix/issues/993#issuecomment-229542203
     @Test(expected = SpecificException.class)
-    public void testFallbackCommandOverridesDefaultIgnoreExceptions() {
-        service.commandWithFallbackOverridesDefaultIgnoreExceptions(SpecificException.class);
+    public void testCommandOverridesDefaultIgnoreExceptions2() {
+        service.commandOverridesDefaultIgnoreExceptions2(SpecificException.class);
     }
 
     @Test(expected = BadRequestException.class)
-    public void testFallbackCommandOverridesDefaultIgnoreExceptions_nonIgnoreExceptionShouldBePropagated() {
-        service.commandWithFallbackOverridesDefaultIgnoreExceptions(BadRequestException.class);
+    public void testCommandOverridesDefaultIgnoreExceptions_nonIgnoreExceptionShouldBePropagated2() {
+        service.commandOverridesDefaultIgnoreExceptions2(BadRequestException.class);
     }
 
     @DefaultProperties(ignoreExceptions = BadRequestException.class)
@@ -74,32 +73,14 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
             throw new SpecificException("from 'commandOverridesDefaultIgnoreExceptions', cause: " + errorType.getSimpleName());
         }
 
-        @HystrixCommand(fallbackMethod = "fallbackInheritsDefaultIgnoreExceptions")
-        public Object commandWithFallbackInheritsDefaultIgnoreExceptions() throws SpecificException {
-            // isn't ignored, need to trigger fallback
-            throw new SpecificException("from 'commandWithFallbackInheritsDefaultIgnoreExceptions'");
+        @HystrixCommand
+        public Object commandInheritsDefaultIgnoreExceptions2() throws SpecificException {
+            throw new SpecificException("from 'commandInheritsDefaultIgnoreExceptions'");
         }
 
         @HystrixCommand
-        private Object fallbackInheritsDefaultIgnoreExceptions() throws BadRequestException {
-            // should be ignored because specified in global ignore exception, fallback command inherits default ignore exceptions
-            throw new BadRequestException("from 'fallbackInheritsDefaultIgnoreExceptions'");
-        }
-
-        @HystrixCommand(fallbackMethod = "fallbackOverridesDefaultIgnoreExceptions")
-        public Object commandWithFallbackOverridesDefaultIgnoreExceptions(Class<? extends Throwable> errorType) {
-            // isn't ignored, need to trigger fallback
+        public Object commandOverridesDefaultIgnoreExceptions2(Class<? extends Throwable> errorType) {
             throw new SpecificException();
-        }
-
-        @HystrixCommand(ignoreExceptions = SpecificException.class)
-        private Object fallbackOverridesDefaultIgnoreExceptions(Class<? extends Throwable> errorType) {
-            if(errorType.equals(BadRequestException.class)){
-                // isn't ignored because fallback doesn't specify this exception type in 'ignoreExceptions'
-                throw new BadRequestException("from 'fallbackOverridesDefaultIgnoreExceptions', cause: " + errorType.getSimpleName());
-            }
-            // something went wrong, this error is ignored because specified in the fallback's ignoreExceptions
-            throw new SpecificException("from 'commandOverridesDefaultIgnoreExceptions', cause: " + errorType.getSimpleName());
         }
     }
 

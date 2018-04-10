@@ -90,7 +90,6 @@ dependencies {
     compileApi project(':collapserx1-core')
     ajtools libraries.aspectjtools
     testRuntime libraries.aspectjrt
-    compileApi libraries.aspectjweaver
     compile libraries.aspectjrt
 
     compileApi libraries.guava

@@ -34,12 +34,9 @@ public interface InspectableBuilder {
         HystrixCommandGroupKey owner = CommandGroupForUnitTest.OWNER_ONE;
         HystrixCommandKey dependencyKey = null;
         HystrixThreadPoolKey threadPoolKey = null;
-        HystrixCircuitBreaker circuitBreaker;
         HystrixThreadPool threadPool = null;
         HystrixCommandProperties.Setter commandPropertiesDefaults = HystrixCommandPropertiesTest.getUnitTestPropertiesSetter();
         HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults = HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder();
-        HystrixCommandMetrics metrics;
-        AbstractCommand.TryableSemaphore fallbackSemaphore = null;
         AbstractCommand.TryableSemaphore executionSemaphore = null;
         TestableExecutionHook executionHook = new TestableExecutionHook();
 
@@ -62,14 +59,6 @@ public interface InspectableBuilder {
             return this;
         }
 
-        TestCommandBuilder setCircuitBreaker(HystrixCircuitBreakerTest.TestCircuitBreaker circuitBreaker) {
-            this.circuitBreaker = circuitBreaker;
-            if (circuitBreaker != null) {
-                this.metrics = circuitBreaker.metrics;
-            }
-            return this;
-        }
-
         TestCommandBuilder setThreadPool(HystrixThreadPool threadPool) {
             this.threadPool = threadPool;
             return this;
@@ -82,16 +71,6 @@ public interface InspectableBuilder {
 
         TestCommandBuilder setThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults) {
             this.threadPoolPropertiesDefaults = threadPoolPropertiesDefaults;
-            return this;
-        }
-
-        TestCommandBuilder setMetrics(HystrixCommandMetrics metrics) {
-            this.metrics = metrics;
-            return this;
-        }
-
-        TestCommandBuilder setFallbackSemaphore(AbstractCommand.TryableSemaphore fallbackSemaphore) {
-            this.fallbackSemaphore = fallbackSemaphore;
             return this;
         }
 

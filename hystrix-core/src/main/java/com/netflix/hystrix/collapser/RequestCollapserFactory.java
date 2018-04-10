@@ -15,11 +15,6 @@
  */
 package com.netflix.hystrix.collapser;
 
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.strategy.HystrixPlugins;
@@ -28,6 +23,10 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableHolder;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableLifecycle;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import com.netflix.hystrix.util.HystrixTimer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Factory for retrieving the correct instance of a RequestCollapser.
@@ -163,7 +162,7 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
     }
 
     /**
-     * Clears all state. If new requests come in instances will be recreated and metrics started from scratch.
+     * Clears all state. If new requests come in instances will be recreated.
      */
     public static void reset() {
         globalScopedCollapsers.clear();

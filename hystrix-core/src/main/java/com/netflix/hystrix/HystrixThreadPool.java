@@ -18,14 +18,12 @@ package com.netflix.hystrix;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Scheduler;
 import rx.functions.Func0;
 
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -163,24 +161,25 @@ public interface HystrixThreadPool {
         private static final Logger logger = LoggerFactory.getLogger(HystrixThreadPoolDefault.class);
 
         private final HystrixThreadPoolProperties properties;
-        private final BlockingQueue<Runnable> queue;
         private final ThreadPoolExecutor threadPool;
-        private final HystrixThreadPoolMetrics metrics;
+        private final HystrixThreadPoolKey threadPoolKey;
         private final int queueSize;
 
         public HystrixThreadPoolDefault(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesDefaults) {
             this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults);
-            HystrixConcurrencyStrategy concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
             this.queueSize = properties.maxQueueSize().get();
 
-            this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey,
-                    concurrencyStrategy.getThreadPool(threadPoolKey, properties),
-                    properties);
-            this.threadPool = this.metrics.getThreadPool();
-            this.queue = this.threadPool.getQueue();
+            this.threadPoolKey = threadPoolKey;
+            this.threadPool = getInstance(threadPoolKey, properties);
+        }
 
-            /* strategy: HystrixMetricsPublisherThreadPool */
-            HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties);
+        private static final ConcurrentHashMap<String, ThreadPoolExecutor> threadPoolsByKey = new ConcurrentHashMap<>();
+
+        private static ThreadPoolExecutor getInstance(HystrixThreadPoolKey key, HystrixThreadPoolProperties properties) {
+            return threadPoolsByKey.computeIfAbsent(key.name(), keyAsString -> {
+                HystrixConcurrencyStrategy concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
+                return concurrencyStrategy.getThreadPool(key, properties);
+            });
         }
 
         @Override
@@ -223,7 +222,7 @@ public interface HystrixThreadPool {
             // In JDK 6, setCorePoolSize and setMaximumPoolSize will execute a lock operation. Avoid them if the pool size is not changed.
             if (threadPool.getCorePoolSize() != dynamicCoreSize || (allowSizesToDiverge && threadPool.getMaximumPoolSize() != dynamicMaximumSize)) {
                 if (maxTooLow) {
-                    logger.error("Hystrix ThreadPool configuration for : " + metrics.getThreadPoolKey().name() + " is trying to set coreSize = " +
+                    logger.error("Hystrix ThreadPool configuration for : " + threadPoolKey.name() + " is trying to set coreSize = " +
                             dynamicCoreSize + " and maximumSize = " + configuredMaximumSize + ".  Maximum size will be set to " +
                             dynamicMaximumSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
                 }
@@ -236,17 +235,14 @@ public interface HystrixThreadPool {
 
         @Override
         public void markThreadExecution() {
-            metrics.markThreadExecution();
         }
 
         @Override
         public void markThreadCompletion() {
-            metrics.markThreadCompletion();
         }
 
         @Override
         public void markThreadRejection() {
-            metrics.markThreadRejection();
         }
 
         /**

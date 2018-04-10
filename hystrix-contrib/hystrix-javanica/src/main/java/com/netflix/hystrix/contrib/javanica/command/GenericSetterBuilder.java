@@ -45,9 +45,9 @@ public class GenericSetterBuilder {
     private String threadPoolKey;
     private String collapserKey;
     private HystrixCollapser.Scope scope;
-    private List<HystrixProperty> commandProperties = Collections.emptyList();
-    private List<HystrixProperty> collapserProperties = Collections.emptyList();
-    private List<HystrixProperty> threadPoolProperties = Collections.emptyList();
+    private List<HystrixProperty> commandProperties;
+    private List<HystrixProperty> collapserProperties;
+    private List<HystrixProperty> threadPoolProperties;
 
     public GenericSetterBuilder(Builder builder) {
         this.groupKey = builder.groupKey;
@@ -136,12 +136,6 @@ public class GenericSetterBuilder {
 
         public Builder commandKey(String pCommandKey) {
             this.commandKey = pCommandKey;
-            return this;
-        }
-
-        @Deprecated
-        public Builder commandKey(String pCommandKey, String def) {
-            this.commandKey = StringUtils.isNotEmpty(pCommandKey) ? pCommandKey : def;
             return this;
         }
 

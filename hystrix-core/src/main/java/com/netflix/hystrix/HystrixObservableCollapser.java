@@ -24,7 +24,6 @@ import com.netflix.hystrix.collapser.RequestCollapser;
 import com.netflix.hystrix.collapser.RequestCollapserFactory;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import org.slf4j.Logger;
@@ -75,7 +74,6 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
     private final RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType> collapserFactory;
     private final HystrixRequestCache requestCache;
     private final HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> collapserInstanceWrapper;
-    private final HystrixCollapserMetrics metrics;
 
     /**
      * The scope of request collapsing.
@@ -102,7 +100,7 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
      * Collapser scoped to {@link Scope#REQUEST} and default configuration.
      * 
      * @param collapserKey
-     *            {@link HystrixCollapserKey} that identifies this collapser and provides the key used for retrieving properties, request caches, publishing metrics etc.
+     *            {@link HystrixCollapserKey} that identifies this collapser and provides the key used for retrieving properties, request caches etc.
      */
     protected HystrixObservableCollapser(HystrixCollapserKey collapserKey) {
         this(Setter.withCollapserKey(collapserKey).andScope(Scope.REQUEST));
@@ -118,10 +116,10 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
      *            Fluent interface for constructor arguments
      */
     protected HystrixObservableCollapser(Setter setter) {
-        this(setter.collapserKey, setter.scope, new RealCollapserTimer(), setter.propertiesSetter, null);
+        this(setter.collapserKey, setter.scope, new RealCollapserTimer(), setter.propertiesSetter);
     }
 
-    /* package for tests */HystrixObservableCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder, HystrixCollapserMetrics metrics) {
+    /* package for tests */HystrixObservableCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder) {
         if (collapserKey == null || collapserKey.name().trim().equals("")) {
             String defaultKeyName = getDefaultNameFromClass(getClass());
             collapserKey = HystrixCollapserKey.Factory.asKey(defaultKeyName);
@@ -131,16 +129,7 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
         this.collapserFactory = new RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType>(collapserKey, scope, timer, properties);
         this.requestCache = HystrixRequestCache.getInstance(collapserKey, HystrixPlugins.getInstance().getConcurrencyStrategy());
 
-        if (metrics == null) {
-            this.metrics = HystrixCollapserMetrics.getInstance(collapserKey, properties);
-        } else {
-            this.metrics = metrics;
-        }
-
         final HystrixObservableCollapser<K, BatchReturnType, ResponseType, RequestArgumentType> self = this;
-
-           /* strategy: HystrixMetricsPublisherCollapser */
-        HystrixMetricsPublisherFactory.createOrRetrievePublisherForCollapser(collapserKey, this.metrics, properties);
 
 
         /**
@@ -151,7 +140,6 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
             @Override
             public Collection<Collection<CollapsedRequest<ResponseType, RequestArgumentType>>> shardRequests(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
                 Collection<Collection<CollapsedRequest<ResponseType, RequestArgumentType>>> shards = self.shardRequests(requests);
-                self.metrics.markShards(shards.size());
                 return shards;
             }
 
@@ -161,7 +149,6 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
 
                 // mark the number of requests being collapsed together
                 command.markAsCollapsedCommand(this.getCollapserKey(), requests.size());
-                self.metrics.markBatch(requests.size());
                 return command.toObservable();
             }
 
@@ -254,7 +241,7 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
     }
 
     /**
-     * Key of the {@link HystrixObservableCollapser} used for properties, metrics, caches, reporting etc.
+     * Key of the {@link HystrixObservableCollapser} used for properties, caches, reporting etc.
      * 
      * @return {@link HystrixCollapserKey} identifying this {@link HystrixObservableCollapser} instance
      */
@@ -279,14 +266,6 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
      */
     public Scope getScope() {
         return Scope.valueOf(collapserFactory.getScope().name());
-    }
-
-    /**
-     * Return the {@link HystrixCollapserMetrics} for this collapser
-     * @return {@link HystrixCollapserMetrics} for this collapser
-     */
-    public HystrixCollapserMetrics getMetrics() {
-        return metrics;
     }
 
     /**
@@ -449,14 +428,12 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
                 if (isRequestCacheEnabled) {
                     HystrixCachedObservable<ResponseType> fromCache = requestCache.get(getCacheKey());
                     if (fromCache != null) {
-                        metrics.markResponseFromCache();
                         return fromCache.toObservable();
                     }
                 }
 
                 RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> requestCollapser = collapserFactory.getRequestCollapser(collapserInstanceWrapper);
                 Observable<ResponseType> response = requestCollapser.submitRequest(getRequestArgument());
-                metrics.markRequestBatched();
                 if (isRequestCacheEnabled) {
                     /*
                      * A race can occur here with multiple threads queuing but only one will be cached.
@@ -493,13 +470,6 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
      */
     protected String getCacheKey() {
         return null;
-    }
-
-    /**
-     * Clears all state. If new requests come in instances will be recreated and metrics started from scratch.
-     */
-    /* package */static void reset() {
-        RequestCollapserFactory.reset();
     }
 
     private static String getDefaultNameFromClass(@SuppressWarnings("rawtypes") Class<? extends HystrixObservableCollapser> cls) {
@@ -547,7 +517,7 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
          * All optional arguments can be set via the chained methods.
          * 
          * @param collapserKey
-         *            {@link HystrixCollapserKey} that identifies this collapser and provides the key used for retrieving properties, request caches, publishing metrics etc.
+         *            {@link HystrixCollapserKey} that identifies this collapser and provides the key used for retrieving properties, request caches etc.
          * @return Setter for fluent interface via method chaining
          */
         public static Setter withCollapserKey(HystrixCollapserKey collapserKey) {

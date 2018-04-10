@@ -24,10 +24,7 @@ import com.netflix.hystrix.contrib.javanica.cache.HystrixRequestCacheManager;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheResult;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
-import com.netflix.hystrix.contrib.javanica.exception.FallbackInvocationException;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.Completable;
 import rx.Observable;
 import rx.Single;
@@ -35,8 +32,6 @@ import rx.functions.Func1;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.List;
-
-import static com.netflix.hystrix.contrib.javanica.utils.CommonUtils.createArgsForFallback;
 
 /**
  * Generic class for all observable commands executed within javanica context.
@@ -50,8 +45,6 @@ public class GenericObservableCommand extends HystrixObservableCommand {
     private final List<Class<? extends Throwable>> ignoreExceptions;
     private final ExecutionType executionType;
     private final HystrixCacheKeyGenerator defaultCacheKeyGenerator = HystrixCacheKeyGenerator.getInstance();
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GenericObservableCommand.class);
 
     public GenericObservableCommand(HystrixCommandBuilder builder) {
         super(builder.getSetterBuilder().buildObservableCommandSetter());
@@ -89,39 +82,6 @@ public class GenericObservableCommand extends HystrixObservableCommand {
             throw throwable;
         }
         return result;
-    }
-
-    /**
-     *{@inheritDoc}.
-     */
-    @Override
-    protected Observable resumeWithFallback() {
-        if (commandActions.hasFallbackAction()) {
-            MetaHolder metaHolder = commandActions.getFallbackAction().getMetaHolder();
-            Throwable cause = getExecutionException();
-            if (cause instanceof CommandActionExecutionException) {
-                cause = cause.getCause();
-            }
-
-            Object[] args = createArgsForFallback(metaHolder, cause);
-            try {
-                Object res = commandActions.getFallbackAction().executeWithArgs(executionType, args);
-                if (res instanceof Observable) {
-                    return (Observable) res;
-                } else if (res instanceof Single) {
-                    return ((Single) res).toObservable();
-                } else if (res instanceof Completable) {
-                    return ((Completable) res).toObservable();
-                } else {
-                    return Observable.just(res);
-                }
-            } catch (Exception e) {
-                LOGGER.error(AbstractHystrixCommand.FallbackErrorMessageBuilder.create()
-                        .append(commandActions.getFallbackAction(), e).build());
-                throw new FallbackInvocationException(e.getCause());
-            }
-        }
-        return super.resumeWithFallback();
     }
 
     /**

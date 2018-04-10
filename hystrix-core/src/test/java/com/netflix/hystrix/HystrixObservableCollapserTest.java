@@ -16,32 +16,15 @@
 package com.netflix.hystrix;
 
 import com.hystrix.junit.HystrixRequestContextRule;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
+import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
+import com.netflix.hystrix.HystrixCollapserTest.TestCollapserTimer;
 import com.netflix.hystrix.collapser.CollapserTimer;
 import com.netflix.hystrix.collapser.RealCollapserTimer;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
-import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesCollapserDefault;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Subscriber;
@@ -52,9 +35,10 @@ import rx.functions.Func1;
 import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 
-import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
-import com.netflix.hystrix.HystrixCollapserTest.TestCollapserTimer;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
 
@@ -148,11 +132,6 @@ public class HystrixObservableCollapserTest {
 
         assertEquals("1", response1.get());
         assertEquals("2", response2.get());
-
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-
-        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
-        assertEquals(2, cmdIterator.next().getNumberCollapsed());
     }
 
     @Test
@@ -735,15 +714,6 @@ public class HystrixObservableCollapserTest {
 
         assertNull(value1.get());
         assertEquals("2", value2.get());
-
-        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertSame(metrics, collapser2.getMetrics());
-
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
-        assertEquals(1, command.getNumberCollapsed()); //1 should have been removed from batch
     }
 
     @Test
@@ -825,15 +795,6 @@ public class HystrixObservableCollapserTest {
 
         assertNull(value1.get());
         assertEquals("2", value2.get());
-
-        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertSame(metrics, collapser2.getMetrics());
-
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
-        assertEquals(1, command.getNumberCollapsed()); //1 should have been removed from batch
     }
 
     @Test
@@ -916,9 +877,6 @@ public class HystrixObservableCollapserTest {
 
         assertNull(value1.get());
         assertNull(value2.get());
-
-        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-        assertEquals(0, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     @Test
@@ -1000,13 +958,6 @@ public class HystrixObservableCollapserTest {
 
         assertEquals("foo", value1.get());
         assertNull(value2.get());
-
-        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
-        assertCommandExecutionEvents(command, HystrixEventType.EMIT, HystrixEventType.SUCCESS, HystrixEventType.COLLAPSED);
-        assertEquals(1, command.getNumberCollapsed()); //should only be 1 collapsed - other came from cache, then was cancelled
     }
 
     @Test
@@ -1088,13 +1039,6 @@ public class HystrixObservableCollapserTest {
 
         assertNull(value1.get());
         assertEquals("foo", value2.get());
-
-        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
-        assertCommandExecutionEvents(command, HystrixEventType.EMIT, HystrixEventType.SUCCESS, HystrixEventType.COLLAPSED);
-        assertEquals(1, command.getNumberCollapsed()); //should only be 1 collapsed - other came from cache, then was cancelled
     }
 
     @Test
@@ -1212,14 +1156,6 @@ public class HystrixObservableCollapserTest {
         assertNull(value1.get());
         assertEquals("foo", value2.get());
         assertNull(value3.get());
-
-
-        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
-        assertCommandExecutionEvents(command, HystrixEventType.EMIT, HystrixEventType.SUCCESS, HystrixEventType.COLLAPSED);
-        assertEquals(1, command.getNumberCollapsed()); //should only be 1 collapsed - other came from cache, then was cancelled
     }
 
     @Test
@@ -1338,10 +1274,6 @@ public class HystrixObservableCollapserTest {
         assertNull(value1.get());
         assertNull(value2.get());
         assertNull(value3.get());
-
-
-        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-        assertEquals(0, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     class Pair<A, B> {
@@ -1382,10 +1314,7 @@ public class HystrixObservableCollapserTest {
             super(HystrixCollapserKey.Factory.asKey("UNITTEST"),
                     HystrixObservableCollapser.Scope.REQUEST,
                     new RealCollapserTimer(),
-                    HystrixCollapserProperties.Setter().withRequestCacheEnabled(requestCachingOn),
-                    HystrixCollapserMetrics.getInstance(HystrixCollapserKey.Factory.asKey("UNITTEST"),
-                            new HystrixPropertiesCollapserDefault(HystrixCollapserKey.Factory.asKey("UNITTEST"),
-                                    HystrixCollapserProperties.Setter())));
+                    HystrixCollapserProperties.Setter().withRequestCacheEnabled(requestCachingOn));
             this.arg = arg;
         }
 
@@ -1521,9 +1450,6 @@ public class HystrixObservableCollapserTest {
         boolean emitExpected = false;
         int expectedEmitCount = 0;
 
-        boolean fallbackEmitExpected = false;
-        int expectedFallbackEmitCount = 0;
-
         List<HystrixEventType> condensedEmitExpectedEventTypes = new ArrayList<HystrixEventType>();
 
         for (HystrixEventType expectedEventType: expectedEventTypes) {
@@ -1534,20 +1460,12 @@ public class HystrixObservableCollapserTest {
                 }
                 emitExpected = true;
                 expectedEmitCount++;
-            } else if (expectedEventType.equals(HystrixEventType.FALLBACK_EMIT)) {
-                if (!fallbackEmitExpected) {
-                    //first FALLBACK_EMIT encountered, add it to condensedEmitExpectedEventTypes
-                    condensedEmitExpectedEventTypes.add(HystrixEventType.FALLBACK_EMIT);
-                }
-                fallbackEmitExpected = true;
-                expectedFallbackEmitCount++;
             } else {
                 condensedEmitExpectedEventTypes.add(expectedEventType);
             }
         }
         List<HystrixEventType> actualEventTypes = command.getExecutionEvents();
         assertEquals(expectedEmitCount, command.getNumberEmissions());
-        assertEquals(expectedFallbackEmitCount, command.getNumberFallbackEmissions());
         assertEquals(condensedEmitExpectedEventTypes, actualEventTypes);
     }
 
@@ -1584,15 +1502,10 @@ public class HystrixObservableCollapserTest {
             this(Scope.REQUEST, timer, value, defaultMaxRequestsInBatch, defaultTimerDelayInMilliseconds, executionLog);
         }
 
-        private static HystrixCollapserMetrics createMetrics() {
-            HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("COLLAPSER_ONE");
-            return HystrixCollapserMetrics.getInstance(key, new HystrixPropertiesCollapserDefault(key, HystrixCollapserProperties.Setter()));
-        }
-
         public TestRequestCollapser(Scope scope, TestCollapserTimer timer, String value, int defaultMaxRequestsInBatch, int defaultTimerDelayInMilliseconds, ConcurrentLinkedQueue<HystrixObservableCommand<String>> executionLog) {
             // use a CollapserKey based on the CollapserTimer object reference so it's unique for each timer as we don't want caching
             // of properties to occur and we're using the default HystrixProperty which typically does caching
-            super(collapserKeyFromString(timer), scope, timer, HystrixCollapserProperties.Setter().withMaxRequestsInBatch(defaultMaxRequestsInBatch).withTimerDelayInMilliseconds(defaultTimerDelayInMilliseconds), createMetrics());
+            super(collapserKeyFromString(timer), scope, timer, HystrixCollapserProperties.Setter().withMaxRequestsInBatch(defaultMaxRequestsInBatch).withTimerDelayInMilliseconds(defaultTimerDelayInMilliseconds));
             this.value = value;
             this.commandsExecuted = executionLog;
         }
@@ -1670,7 +1583,7 @@ public class HystrixObservableCollapserTest {
         private final Collection<CollapsedRequest<String, String>> requests;
 
         TestCollapserCommand(Collection<CollapsedRequest<String, String>> requests) {
-            super(testPropsBuilder().setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionTimeoutInMilliseconds(1000)));
+            super(testPropsBuilder().setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()));
             this.requests = requests;
         }
 
@@ -1686,7 +1599,7 @@ public class HystrixObservableCollapserTest {
                         if (request.getArgument() == null) {
                             throw new NullPointerException("Simulated Error");
                         }
-                        if (request.getArgument().equals("TIMEOUT")) {
+                        if (request.getArgument().equals("XXX")) {
                             try {
                                 Thread.sleep(200);
                             } catch (InterruptedException e) {
@@ -1715,7 +1628,6 @@ public class HystrixObservableCollapserTest {
 
         private final static HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("COLLAPSER_MULTI");
         private final static HystrixCollapserProperties.Setter propsSetter = HystrixCollapserProperties.Setter().withMaxRequestsInBatch(10).withTimerDelayInMilliseconds(10);
-        private final static HystrixCollapserMetrics metrics = HystrixCollapserMetrics.getInstance(key, new HystrixPropertiesCollapserDefault(key, HystrixCollapserProperties.Setter()));
 
         static {
             emitsPerArg = new ConcurrentHashMap<String, Integer>();
@@ -1734,7 +1646,7 @@ public class HystrixObservableCollapserTest {
         }
 
         public TestCollapserWithMultipleResponses(CollapserTimer timer, int arg, int numEmits, boolean commandConstructionFails, boolean commandExecutionFails, Func1<String, String> keyMapper, Action1<CollapsedRequest<String, String>> onMissingResponseHandler) {
-            super(collapserKeyFromString(timer), Scope.REQUEST, timer, propsSetter, metrics);
+            super(collapserKeyFromString(timer), Scope.REQUEST, timer, propsSetter);
             this.arg = arg + "";
             emitsPerArg.put(this.arg, numEmits);
             this.commandConstructionFails = commandConstructionFails;

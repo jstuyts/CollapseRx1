@@ -1,8 +1,0 @@
-dependencies {
-    compileApi project(':collapserx1-core')
-	compile project(':collapserx1-serialization')
-    compileOnly libraries.servletApi
-    testCompile libraries.junit
-    testCompile libraries.mockitoCore
-    testCompile libraries.servletApi
-}

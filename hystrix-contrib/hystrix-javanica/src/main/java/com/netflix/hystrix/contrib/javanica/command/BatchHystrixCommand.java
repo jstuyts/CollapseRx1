@@ -17,25 +17,17 @@ package com.netflix.hystrix.contrib.javanica.command;
 
 
 import com.netflix.hystrix.HystrixCollapser;
-import com.netflix.hystrix.contrib.javanica.exception.FallbackInvocationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static com.netflix.hystrix.contrib.javanica.exception.ExceptionUtils.unwrapCause;
-import static com.netflix.hystrix.contrib.javanica.utils.CommonUtils.createArgsForFallback;
-
 /**
  * This command is used in collapser.
  */
 @ThreadSafe
 public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(BatchHystrixCommand.class);
 
     public BatchHystrixCommand(HystrixCommandBuilder builder) {
         super(builder);
@@ -58,34 +50,6 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
                 return getCommandAction().executeWithArgs(getExecutionType(), args);
             }
         });
-    }
-
-
-    @Override
-    @SuppressWarnings("unchecked")
-    protected List<Object> getFallback() {
-        if (getFallbackAction() != null) {
-            final CommandAction commandAction = getFallbackAction();
-
-            try {
-                return (List<Object>) process(new Action() {
-                    @Override
-                    Object execute() {
-                        MetaHolder metaHolder = commandAction.getMetaHolder();
-                        Object[] args = toArgs(getCollapsedRequests());
-                        args = createArgsForFallback(args, metaHolder, getExecutionException());
-                        return commandAction.executeWithArgs(commandAction.getMetaHolder().getFallbackExecutionType(), args);
-                    }
-                });
-            } catch (Throwable e) {
-                LOGGER.error(FallbackErrorMessageBuilder.create()
-                        .append(commandAction, e).build());
-                throw new FallbackInvocationException(unwrapCause(e));
-            }
-        } else {
-            return super.getFallback();
-        }
-
     }
 
     private Object[] toArgs(Collection<HystrixCollapser.CollapsedRequest<Object, Object>> requests) {

@@ -15,37 +15,30 @@
  */
 package com.netflix.hystrix.examples.basic;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
+import com.netflix.hystrix.HystrixObservableCollapser;
+import com.netflix.hystrix.HystrixObservableCommand;
+import com.netflix.hystrix.examples.basic.ObservableCommandNumbersToWords.NumberWord;
+import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import rx.Observable;
 import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 
-import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
-import com.netflix.hystrix.HystrixObservableCollapser;
-import com.netflix.hystrix.HystrixObservableCommand;
-import com.netflix.hystrix.HystrixRequestLog;
-import com.netflix.hystrix.examples.basic.ObservableCommandNumbersToWords.NumberWord;
-import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Example that uses {@link HystrixObservableCollapser} to batch multiple {@link ObservableCommandNumbersToWords} requests.
@@ -161,7 +154,6 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 		@After
 		public void after()
 		{
-			System.out.println(HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
 			ctx.shutdown();
 		}
 
@@ -185,7 +177,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 				// wait a little bit after running half of the requests so that we don't collapse all of them into one batch
 				// TODO this can probably be improved by using a test scheduler
 				if (number == noOfRequests / 2)
-					sleep(1000);
+					sleep();
 
 			}
 
@@ -241,7 +233,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 				// wait a little bit after running half of the requests so that we don't collapse all of them into one batch
 				// TODO this can probably be improved by using a test scheduler
 				if (number == noOfRequests / 2)
-					sleep(1000);
+					sleep();
 			}
 
 			assertThat(subscribersByNumber.size(), is(noOfRequests));
@@ -302,7 +294,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 			return ObservableCommandNumbersToWords.dict.get(number);
 		}
 
-		private void sleep(final long ms)
+		private void sleep()
 		{
 			try
 			{

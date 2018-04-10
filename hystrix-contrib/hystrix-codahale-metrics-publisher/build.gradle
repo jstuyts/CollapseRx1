@@ -1,6 +1,0 @@
-dependencies {
-    compileApi project(':collapserx1-core')
-    compileApi libraries.metricsCoreDropwizard
-    testCompile libraries.junit
-    testCompile libraries.mockitoCore
-}

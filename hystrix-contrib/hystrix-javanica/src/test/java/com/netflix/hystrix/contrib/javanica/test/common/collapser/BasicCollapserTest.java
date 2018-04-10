@@ -16,9 +16,6 @@
 package com.netflix.hystrix.contrib.javanica.test.common.collapser;
 
 import com.google.common.collect.Sets;
-import com.netflix.hystrix.HystrixEventType;
-import com.netflix.hystrix.HystrixInvokableInfo;
-import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
@@ -36,9 +33,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by dmgcodevil
@@ -69,17 +64,6 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
         assertEquals("name: 3", f3.get().getName());
         assertEquals("name: 4", f4.get().getName());
         assertEquals("name: 5", f5.get().getName());
-        // assert that the batch command 'getUserByIds' was in fact
-        // executed and that it executed only once
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                .getAllExecutedCommands().iterator().next();
-        // assert the command is the one we're expecting
-        assertEquals("getUserByIds", command.getCommandKey().name());
-        // confirm that it was a COLLAPSED command execution
-        assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
-        // and that it was successful
-        assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
     @Test
@@ -98,69 +82,36 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
             assertEquals(expectedIds.remove(cUser.getId()), true);
         }
         assertEquals(expectedIds.isEmpty(), true);
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                .getAllExecutedCommands().iterator().next();
-        // assert the command is the one we're expecting
-        assertEquals("getUserByIds", command.getCommandKey().name());
-        // confirm that it was a COLLAPSED command execution
-        assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
-        // and that it was successful
-        assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
     @Test
-    public void testGetUserByIdWithFallback() throws ExecutionException, InterruptedException {
-        Future<User> f1 = userService.getUserByIdWithFallback("1");
-        Future<User> f2 = userService.getUserByIdWithFallback("2");
-        Future<User> f3 = userService.getUserByIdWithFallback("3");
-        Future<User> f4 = userService.getUserByIdWithFallback("4");
-        Future<User> f5 = userService.getUserByIdWithFallback("5");
+    public void testGetUserById2() throws ExecutionException, InterruptedException {
+        Future<User> f1 = userService.getUserById2("1");
+        Future<User> f2 = userService.getUserById2("2");
+        Future<User> f3 = userService.getUserById2("3");
+        Future<User> f4 = userService.getUserById2("4");
+        Future<User> f5 = userService.getUserById2("5");
 
         assertEquals("name: 1", f1.get().getName());
         assertEquals("name: 2", f2.get().getName());
         assertEquals("name: 3", f3.get().getName());
         assertEquals("name: 4", f4.get().getName());
         assertEquals("name: 5", f5.get().getName());
-        // two command should be executed: "getUserByIdWithFallback" and "getUserByIdsWithFallback"
-        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        HystrixInvokableInfo<?> getUserByIdsWithFallback = getHystrixCommandByKey("getUserByIdsWithFallback");
-        com.netflix.hystrix.HystrixInvokableInfo getUserByIdsFallback = getHystrixCommandByKey("getUserByIdsFallback");
-        // confirm that command has failed
-        assertTrue(getUserByIdsWithFallback.getExecutionEvents().contains(HystrixEventType.FAILURE));
-        assertTrue(getUserByIdsWithFallback.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
-        // and that fallback was successful
-        assertTrue(getUserByIdsFallback.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
     @Test
-    public void testGetUserByIdWithFallbackWithThrowableParam() throws ExecutionException, InterruptedException {
-        Future<User> f1 = userService.getUserByIdWithFallbackWithThrowableParam("1");
-        Future<User> f2 = userService.getUserByIdWithFallbackWithThrowableParam("2");
-        Future<User> f3 = userService.getUserByIdWithFallbackWithThrowableParam("3");
-        Future<User> f4 = userService.getUserByIdWithFallbackWithThrowableParam("4");
-        Future<User> f5 = userService.getUserByIdWithFallbackWithThrowableParam("5");
+    public void testGetUserByIdWithThrowableParam() throws ExecutionException, InterruptedException {
+        Future<User> f1 = userService.getUserByIdWithThrowableParam("1");
+        Future<User> f2 = userService.getUserByIdWithThrowableParam("2");
+        Future<User> f3 = userService.getUserByIdWithThrowableParam("3");
+        Future<User> f4 = userService.getUserByIdWithThrowableParam("4");
+        Future<User> f5 = userService.getUserByIdWithThrowableParam("5");
 
         assertEquals("name: 1", f1.get().getName());
         assertEquals("name: 2", f2.get().getName());
         assertEquals("name: 3", f3.get().getName());
         assertEquals("name: 4", f4.get().getName());
         assertEquals("name: 5", f5.get().getName());
-        // 4 commands should be executed
-        assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        HystrixInvokableInfo<?> batchCommand = getHystrixCommandByKey("getUserByIdsThrowsException");
-        com.netflix.hystrix.HystrixInvokableInfo fallback1 = getHystrixCommandByKey("getUserByIdsFallbackWithThrowableParam1");
-        com.netflix.hystrix.HystrixInvokableInfo fallback2 = getHystrixCommandByKey("getUserByIdsFallbackWithThrowableParam2");
-        com.netflix.hystrix.HystrixInvokableInfo fallback3 = getHystrixCommandByKey("getUserByIdsFallbackWithThrowableParam3");
-        // confirm that command has failed
-        assertTrue(batchCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-
-        assertTrue(fallback1.getExecutionEvents().contains(HystrixEventType.FAILURE));
-        assertTrue(fallback2.getExecutionEvents().contains(HystrixEventType.FAILURE));
-        assertTrue(fallback2.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
-
-        // and that last fallback3 was successful
-        assertTrue(fallback3.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
     @Test(expected = IllegalStateException.class)
@@ -200,9 +151,9 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
             return null;
         }
 
-        @HystrixCollapser(batchMethod = "getUserByIdsWithFallback",
+        @HystrixCollapser(batchMethod = "getUserByIds",
                 collapserProperties = {@HystrixProperty(name = "timerDelayInMilliseconds", value = "200")})
-        public Future<User> getUserByIdWithFallback(String id) {
+        public Future<User> getUserById2(String id) {
             return null;
         }
 
@@ -214,40 +165,36 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
 
         @HystrixCollapser(batchMethod = "getUserByIdsThrowsException",
                 collapserProperties = {@HystrixProperty(name = "timerDelayInMilliseconds", value = "200")})
-        public Future<User> getUserByIdWithFallbackWithThrowableParam(String id) {
+        public Future<User> getUserByIdWithThrowableParam(String id) {
             return null;
         }
 
-        @HystrixCommand(
-                fallbackMethod = "getUserByIdsFallbackWithThrowableParam1",
-                commandProperties = {
-                @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "10000")// for debug
-        })
+        @HystrixCommand
         public List<User> getUserByIdsThrowsException(List<String> ids) {
             throw new RuntimeException("getUserByIdsFails failed");
         }
 
-        @HystrixCommand(fallbackMethod = "getUserByIdsFallbackWithThrowableParam2")
-        private List<User> getUserByIdsFallbackWithThrowableParam1(List<String> ids, Throwable e) {
+        @HystrixCommand
+        private List<User> getUserByIdsWithThrowableParam1(List<String> ids, Throwable e) {
             if (e.getMessage().equals("getUserByIdsFails failed")) {
-                throw new RuntimeException("getUserByIdsFallbackWithThrowableParam1 failed");
+                throw new RuntimeException("getUserByIdsWithThrowableParam1 failed");
             }
             List<User> users = new ArrayList<User>();
             for (String id : ids) {
                 users.add(new User(id, "name: " + id));
             }
             return users;
-        }
-
-        @HystrixCommand(fallbackMethod = "getUserByIdsFallbackWithThrowableParam3")
-        private List<User> getUserByIdsFallbackWithThrowableParam2(List<String> ids) {
-            throw new RuntimeException("getUserByIdsFallbackWithThrowableParam2 failed");
         }
 
         @HystrixCommand
-        private List<User> getUserByIdsFallbackWithThrowableParam3(List<String> ids, Throwable e) {
-            if (!e.getMessage().equals("getUserByIdsFallbackWithThrowableParam2 failed")) {
-                throw new RuntimeException("getUserByIdsFallbackWithThrowableParam3 failed");
+        private List<User> getUserByIdsWithThrowableParam2(List<String> ids) {
+            throw new RuntimeException("getUserByIdsWithThrowableParam2 failed");
+        }
+
+        @HystrixCommand
+        private List<User> getUserByIdsWithThrowableParam3(List<String> ids, Throwable e) {
+            if (!e.getMessage().equals("getUserByIdsWithThrowableParam2 failed")) {
+                throw new RuntimeException("getUserByIdsWithThrowableParam3 failed");
             }
             List<User> users = new ArrayList<User>();
             for (String id : ids) {
@@ -256,9 +203,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
             return users;
         }
 
-        @HystrixCommand(commandProperties = {
-                @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "10000")// for debug
-        })
+        @HystrixCommand
         public List<User> getUserByIds(List<String> ids) {
             List<User> users = new ArrayList<User>();
             for (String id : ids) {
@@ -268,23 +213,11 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
             return users;
         }
 
-        @HystrixCommand(fallbackMethod = "getUserByIdsFallback",
-                commandProperties = {
-                        @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "10000")// for debug
-                })
-        public List<User> getUserByIdsWithFallback(List<String> ids) {
+        @HystrixCommand
+        public List<User> getUserByIds2(List<String> ids) {
             throw new RuntimeException("not found");
         }
 
-
-        @HystrixCommand
-        private List<User> getUserByIdsFallback(List<String> ids) {
-            List<User> users = new ArrayList<User>();
-            for (String id : ids) {
-                users.add(new User(id, "name: " + id));
-            }
-            return users;
-        }
 
         // wrong return type, expected: Future<User> or User, because batch command getUserByIds returns List<User>
         @HystrixCollapser(batchMethod = "getUserByIds")

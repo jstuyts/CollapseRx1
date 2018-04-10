@@ -26,11 +26,6 @@ public class Closure {
     private final Method closureMethod;
     private final Object closureObj;
 
-    public Closure() {
-        closureMethod = null;
-        closureObj = null;
-    }
-
     public Closure(Method closureMethod, Object closureObj) {
         this.closureMethod = closureMethod;
         this.closureObj = closureObj;

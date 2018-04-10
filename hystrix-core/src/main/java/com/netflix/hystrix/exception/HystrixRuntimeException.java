@@ -17,10 +17,9 @@ package com.netflix.hystrix.exception;
 
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixInvokable;
-import com.netflix.hystrix.util.ExceptionThreadingUtility;
 
 /**
- * RuntimeException that is thrown when a {@link HystrixCommand} fails and does not have a fallback.
+ * RuntimeException that is thrown when a {@link HystrixCommand} fails.
  */
 @SuppressWarnings("rawtypes")
 public class HystrixRuntimeException extends RuntimeException {
@@ -28,25 +27,22 @@ public class HystrixRuntimeException extends RuntimeException {
     private static final long serialVersionUID = 5219160375476046229L;
 
     private final Class<? extends HystrixInvokable> commandClass;
-    private final Throwable fallbackException;
     private final FailureType failureCause;
 
     public static enum FailureType {
-        BAD_REQUEST_EXCEPTION, COMMAND_EXCEPTION, TIMEOUT, SHORTCIRCUIT, REJECTED_THREAD_EXECUTION, REJECTED_SEMAPHORE_EXECUTION, REJECTED_SEMAPHORE_FALLBACK
+        BAD_REQUEST_EXCEPTION, COMMAND_EXCEPTION, REJECTED_THREAD_EXECUTION, REJECTED_SEMAPHORE_EXECUTION
     }
 
-    public HystrixRuntimeException(FailureType failureCause, Class<? extends HystrixInvokable> commandClass, String message, Exception cause, Throwable fallbackException) {
+    public HystrixRuntimeException(FailureType failureCause, Class<? extends HystrixInvokable> commandClass, String message, Exception cause) {
         super(message, cause);
         this.failureCause = failureCause;
         this.commandClass = commandClass;
-        this.fallbackException = fallbackException;
     }
 
-    public HystrixRuntimeException(FailureType failureCause, Class<? extends HystrixInvokable> commandClass, String message, Throwable cause, Throwable fallbackException) {
+    public HystrixRuntimeException(FailureType failureCause, Class<? extends HystrixInvokable> commandClass, String message, Throwable cause) {
         super(message, cause);
         this.failureCause = failureCause;
         this.commandClass = commandClass;
-        this.fallbackException = fallbackException;
     }
 
     /**
@@ -65,15 +61,6 @@ public class HystrixRuntimeException extends RuntimeException {
      */
     public Class<? extends HystrixInvokable> getImplementingClass() {
         return commandClass;
-    }
-
-    /**
-     * The {@link Throwable} that was thrown when trying to retrieve a fallback.
-     * 
-     * @return {@link Throwable}
-     */
-    public Throwable getFallbackException() {
-        return fallbackException;
     }
 
 }

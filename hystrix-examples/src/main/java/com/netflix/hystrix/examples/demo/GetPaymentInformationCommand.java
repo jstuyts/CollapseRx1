@@ -21,15 +21,12 @@ import com.netflix.hystrix.HystrixCommandGroupKey;
 /**
  * Sample HystrixCommand simulating one that would fetch PaymentInformation objects from a remote service or database.
  * <p>
- * This fails fast with no fallback and does not use request caching.
+ * This fails fast and does not use request caching.
  */
 public class GetPaymentInformationCommand extends HystrixCommand<PaymentInformation> {
 
-    private final UserAccount user;
-
-    public GetPaymentInformationCommand(UserAccount user) {
+    public GetPaymentInformationCommand() {
         super(HystrixCommandGroupKey.Factory.asKey("PaymentInformation"));
-        this.user = user;
     }
 
     @Override
@@ -57,7 +54,7 @@ public class GetPaymentInformationCommand extends HystrixCommand<PaymentInformat
         }
 
         /* success ... create (a very insecure) PaymentInformation with data "from" the remote service response */
-        return new PaymentInformation(user, "4444888833337777", 12, 15);
+        return new PaymentInformation("4444888833337777", 12, 15);
     }
 
 }

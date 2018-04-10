@@ -45,13 +45,11 @@ public interface HystrixObservable<R> extends HystrixInvokable<R> {
      * <p>
      * See https://github.com/ReactiveX/RxJava/wiki for more information.
      *
-     * @return {@code Observable<R>} that executes and calls back with the result of the command execution or a fallback if the command execution fails for any reason.
+     * @return {@code Observable<R>} that executes and calls back with the result of the command execution.
      * @throws HystrixRuntimeException
-     *             if a fallback does not exist
-     *             <p>
      *             <ul>
      *             <li>via {@code Observer#onError} if a failure occurs</li>
-     *             <li>or immediately if the command can not be queued (such as short-circuited, thread-pool/semaphore rejected)</li>
+     *             <li>or immediately if the command can not be queued (such as thread-pool/semaphore rejected)</li>
      *             </ul>
      * @throws HystrixBadRequestException
      *             via {@code Observer#onError} if invalid arguments or state were used representing a user failure, not a system failure
@@ -76,13 +74,11 @@ public interface HystrixObservable<R> extends HystrixInvokable<R> {
      * <p>
      * See https://github.com/ReactiveX/RxJava/wiki for more information.
      *
-     * @return {@code Observable<R>} that executes and calls back with the result of the command execution or a fallback if the command execution fails for any reason.
+     * @return {@code Observable<R>} that executes and calls back with the result of the command execution.
      * @throws HystrixRuntimeException
-     *             if a fallback does not exist
-     *             <p>
      *             <ul>
      *             <li>via {@code Observer#onError} if a failure occurs</li>
-     *             <li>or immediately if the command can not be queued (such as short-circuited, thread-pool/semaphore rejected)</li>
+     *             <li>or immediately if the command can not be queued (such as thread-pool/semaphore rejected)</li>
      *             </ul>
      * @throws HystrixBadRequestException
      *             via {@code Observer#onError} if invalid arguments or state were used representing a user failure, not a system failure

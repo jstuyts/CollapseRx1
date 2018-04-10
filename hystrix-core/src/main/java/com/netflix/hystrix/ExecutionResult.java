@@ -58,37 +58,23 @@ public class ExecutionResult {
     public static class EventCounts {
         private final BitSet events;
         private final int numEmissions;
-        private final int numFallbackEmissions;
         private final int numCollapsed;
 
-        EventCounts() {
-            this.events = new BitSet(NUM_EVENT_TYPES);
-            this.numEmissions = 0;
-            this.numFallbackEmissions = 0;
-            this.numCollapsed = 0;
-        }
-
-        EventCounts(BitSet events, int numEmissions, int numFallbackEmissions, int numCollapsed) {
+        EventCounts(BitSet events, int numEmissions, int numCollapsed) {
             this.events = events;
             this.numEmissions = numEmissions;
-            this.numFallbackEmissions = numFallbackEmissions;
             this.numCollapsed = numCollapsed;
         }
 
         EventCounts(HystrixEventType... eventTypes) {
             BitSet newBitSet = new BitSet(NUM_EVENT_TYPES);
             int localNumEmits = 0;
-            int localNumFallbackEmits = 0;
             int localNumCollapsed = 0;
             for (HystrixEventType eventType: eventTypes) {
                 switch (eventType) {
                     case EMIT:
                         newBitSet.set(HystrixEventType.EMIT.ordinal());
                         localNumEmits++;
-                        break;
-                    case FALLBACK_EMIT:
-                        newBitSet.set(HystrixEventType.FALLBACK_EMIT.ordinal());
-                        localNumFallbackEmits++;
                         break;
                     case COLLAPSED:
                         newBitSet.set(HystrixEventType.COLLAPSED.ordinal());
@@ -101,7 +87,6 @@ public class ExecutionResult {
             }
             this.events = newBitSet;
             this.numEmissions = localNumEmits;
-            this.numFallbackEmissions = localNumFallbackEmits;
             this.numCollapsed = localNumCollapsed;
         }
 
@@ -112,16 +97,11 @@ public class ExecutionResult {
         EventCounts plus(HystrixEventType eventType, int count) {
             BitSet newBitSet = (BitSet) events.clone();
             int localNumEmits = numEmissions;
-            int localNumFallbackEmits =  numFallbackEmissions;
             int localNumCollapsed = numCollapsed;
             switch (eventType) {
                 case EMIT:
                     newBitSet.set(HystrixEventType.EMIT.ordinal());
                     localNumEmits += count;
-                    break;
-                case FALLBACK_EMIT:
-                    newBitSet.set(HystrixEventType.FALLBACK_EMIT.ordinal());
-                    localNumFallbackEmits += count;
                     break;
                 case COLLAPSED:
                     newBitSet.set(HystrixEventType.COLLAPSED.ordinal());
@@ -131,7 +111,7 @@ public class ExecutionResult {
                     newBitSet.set(eventType.ordinal());
                     break;
             }
-            return new EventCounts(newBitSet, localNumEmits, localNumFallbackEmits, localNumCollapsed);
+            return new EventCounts(newBitSet, localNumEmits, localNumCollapsed);
         }
 
         public boolean contains(HystrixEventType eventType) {
@@ -145,7 +125,6 @@ public class ExecutionResult {
         public int getCount(HystrixEventType eventType) {
             switch (eventType) {
                 case EMIT: return numEmissions;
-                case FALLBACK_EMIT: return numFallbackEmissions;
                 case EXCEPTION_THROWN: return containsAnyOf(EXCEPTION_PRODUCING_EVENTS) ? 1 : 0;
                 case COLLAPSED: return numCollapsed;
                 default: return contains(eventType) ? 1 : 0;
@@ -160,7 +139,6 @@ public class ExecutionResult {
             EventCounts that = (EventCounts) o;
 
             if (numEmissions != that.numEmissions) return false;
-            if (numFallbackEmissions != that.numFallbackEmissions) return false;
             if (numCollapsed != that.numCollapsed) return false;
             return events.equals(that.events);
 
@@ -170,7 +148,6 @@ public class ExecutionResult {
         public int hashCode() {
             int result = events.hashCode();
             result = 31 * result + numEmissions;
-            result = 31 * result + numFallbackEmissions;
             result = 31 * result + numCollapsed;
             return result;
         }
@@ -180,7 +157,6 @@ public class ExecutionResult {
             return "EventCounts{" +
                     "events=" + events +
                     ", numEmissions=" + numEmissions +
-                    ", numFallbackEmissions=" + numFallbackEmissions +
                     ", numCollapsed=" + numCollapsed +
                     '}';
         }
@@ -218,7 +194,6 @@ public class ExecutionResult {
             case SUCCESS: return true;
             case FAILURE: return true;
             case BAD_REQUEST: return true;
-            case TIMEOUT: return true;
             case CANCELLED: return true;
             default: return false;
         }

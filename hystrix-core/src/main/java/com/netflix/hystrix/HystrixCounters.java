@@ -18,7 +18,6 @@ package com.netflix.hystrix;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Class with global statistics on Hystrix runtime behavior.
  * All of the data available via this class is static and scoped at the JVM level
  */
 public class HystrixCounters {

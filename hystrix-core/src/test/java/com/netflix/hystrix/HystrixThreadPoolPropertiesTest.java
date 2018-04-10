@@ -15,13 +15,12 @@
  */
 package com.netflix.hystrix;
 
-import static org.junit.Assert.assertEquals;
-
+import com.netflix.config.ConfigurationManager;
+import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import org.junit.After;
 import org.junit.Test;
 
-import com.netflix.config.ConfigurationManager;
-import com.netflix.hystrix.strategy.properties.HystrixProperty;
+import static org.junit.Assert.assertEquals;
 
 public class HystrixThreadPoolPropertiesTest {
 
@@ -34,9 +33,7 @@ public class HystrixThreadPoolPropertiesTest {
                 .withMaximumSize(15) //maximum size of thread pool
                 .withKeepAliveTimeMinutes(1)// minutes to keep a thread alive (though in practice this doesn't get used as by default we set a fixed size)
                 .withMaxQueueSize(100)// size of queue (but we never allow it to grow this big ... this can't be dynamically changed so we use 'queueSizeRejectionThreshold' to artificially limit and reject)
-                .withQueueSizeRejectionThreshold(10)// number of items in queue at which point we reject (this can be dyamically changed)
-                .withMetricsRollingStatisticalWindowInMilliseconds(10000)// milliseconds for rolling number
-                .withMetricsRollingStatisticalWindowBuckets(10);// number of buckets in rolling number (10 1-second buckets)
+                .withQueueSizeRejectionThreshold(10);// number of items in queue at which point we reject (this can be dyamically changed)
     }
 
     /**
@@ -72,16 +69,6 @@ public class HystrixThreadPoolPropertiesTest {
             @Override
             public HystrixProperty<Integer> queueSizeRejectionThreshold() {
                 return HystrixProperty.Factory.asProperty(builder.getQueueSizeRejectionThreshold());
-            }
-
-            @Override
-            public HystrixProperty<Integer> metricsRollingStatisticalWindowInMilliseconds() {
-                return HystrixProperty.Factory.asProperty(builder.getMetricsRollingStatisticalWindowInMilliseconds());
-            }
-
-            @Override
-            public HystrixProperty<Integer> metricsRollingStatisticalWindowBuckets() {
-                return HystrixProperty.Factory.asProperty(builder.getMetricsRollingStatisticalWindowBuckets());
             }
 
         };
@@ -283,5 +270,3 @@ public class HystrixThreadPoolPropertiesTest {
         assertEquals(12, (int) properties.actualMaximumSize());
     }
 }
-
-

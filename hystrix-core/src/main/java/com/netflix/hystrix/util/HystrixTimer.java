@@ -16,7 +16,6 @@
 package com.netflix.hystrix.util;
 
 import com.netflix.hystrix.HystrixCollapser;
-import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import org.slf4j.Logger;
@@ -32,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Timer used by {@link HystrixCommand} to timeout async executions and {@link HystrixCollapser} to trigger batch executions.
+ * Timer used by {@link HystrixCollapser} to trigger batch executions.
  */
 public class HystrixTimer {
 
@@ -152,7 +151,7 @@ public class HystrixTimer {
             HystrixPropertiesStrategy propertiesStrategy = HystrixPlugins.getInstance().getPropertiesStrategy();
             int coreSize = propertiesStrategy.getTimerThreadPoolProperties().getCorePoolSize().get();
 
-            ThreadFactory threadFactory = null;
+            ThreadFactory threadFactory;
             if (!PlatformSpecific.isAppEngineStandardEnvironment()) {
                 threadFactory = new ThreadFactory() {
                     final AtomicInteger counter = new AtomicInteger();

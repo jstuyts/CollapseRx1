@@ -15,17 +15,16 @@
  */
 package com.netflix.hystrix;
 
-import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forBoolean;
-import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forInteger;
+import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
+import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
+import com.netflix.hystrix.strategy.properties.HystrixProperty;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
-import com.netflix.hystrix.strategy.properties.HystrixProperty;
-import com.netflix.hystrix.util.HystrixRollingNumber;
+import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forBoolean;
+import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forInteger;
 
 /**
  * Properties for instances of {@link HystrixThreadPool}.
@@ -55,8 +54,6 @@ public abstract class HystrixThreadPoolProperties {
                                                                                  //turning this on should be a conscious decision by the user, so we default it to false
 
     static int default_queueSizeRejectionThreshold = 5; // number of items in queue
-    static int default_threadPoolRollingNumberStatisticalWindow = 10000; // milliseconds for rolling number
-    static int default_threadPoolRollingNumberStatisticalWindowBuckets = 10; // number of buckets in rolling number (10 1-second buckets)
 
     private final HystrixProperty<Integer> corePoolSize;
     private final HystrixProperty<Integer> maximumPoolSize;
@@ -64,9 +61,6 @@ public abstract class HystrixThreadPoolProperties {
     private final HystrixProperty<Integer> maxQueueSize;
     private final HystrixProperty<Integer> queueSizeRejectionThreshold;
     private final HystrixProperty<Boolean> allowMaximumSizeToDivergeFromCoreSize;
-
-    private final HystrixProperty<Integer> threadPoolRollingNumberStatisticalWindowInMilliseconds;
-    private final HystrixProperty<Integer> threadPoolRollingNumberStatisticalWindowBuckets;
 
     protected HystrixThreadPoolProperties(HystrixThreadPoolKey key) {
         this(key, new Setter(), "hystrix");
@@ -88,8 +82,6 @@ public abstract class HystrixThreadPoolProperties {
         this.keepAliveTime = getProperty(propertyPrefix, key, "keepAliveTimeMinutes", builder.getKeepAliveTimeMinutes(), default_keepAliveTimeMinutes);
         this.maxQueueSize = getProperty(propertyPrefix, key, "maxQueueSize", builder.getMaxQueueSize(), default_maxQueueSize);
         this.queueSizeRejectionThreshold = getProperty(propertyPrefix, key, "queueSizeRejectionThreshold", builder.getQueueSizeRejectionThreshold(), default_queueSizeRejectionThreshold);
-        this.threadPoolRollingNumberStatisticalWindowInMilliseconds = getProperty(propertyPrefix, key, "metrics.rollingStats.timeInMilliseconds", builder.getMetricsRollingStatisticalWindowInMilliseconds(), default_threadPoolRollingNumberStatisticalWindow);
-        this.threadPoolRollingNumberStatisticalWindowBuckets = getProperty(propertyPrefix, key, "metrics.rollingStats.numBuckets", builder.getMetricsRollingStatisticalWindowBuckets(), default_threadPoolRollingNumberStatisticalWindowBuckets);
     }
 
     private static HystrixProperty<Integer> getProperty(String propertyPrefix, HystrixThreadPoolKey key, String instanceProperty, Integer builderOverrideValue, Integer defaultValue) {
@@ -187,24 +179,6 @@ public abstract class HystrixThreadPoolProperties {
     }
 
     /**
-     * Duration of statistical rolling window in milliseconds. This is passed into {@link HystrixRollingNumber} inside each {@link HystrixThreadPoolMetrics} instance.
-     * 
-     * @return {@code HystrixProperty<Integer>}
-     */
-    public HystrixProperty<Integer> metricsRollingStatisticalWindowInMilliseconds() {
-        return threadPoolRollingNumberStatisticalWindowInMilliseconds;
-    }
-
-    /**
-     * Number of buckets the rolling statistical window is broken into. This is passed into {@link HystrixRollingNumber} inside each {@link HystrixThreadPoolMetrics} instance.
-     * 
-     * @return {@code HystrixProperty<Integer>}
-     */
-    public HystrixProperty<Integer> metricsRollingStatisticalWindowBuckets() {
-        return threadPoolRollingNumberStatisticalWindowBuckets;
-    }
-
-    /**
      * Factory method to retrieve the default Setter.
      */
     public static Setter Setter() {
@@ -243,8 +217,6 @@ public abstract class HystrixThreadPoolProperties {
         private Integer maxQueueSize = null;
         private Integer queueSizeRejectionThreshold = null;
         private Boolean allowMaximumSizeToDivergeFromCoreSize = null;
-        private Integer rollingStatisticalWindowInMilliseconds = null;
-        private Integer rollingStatisticalWindowBuckets = null;
 
         private Setter() {
         }
@@ -271,14 +243,6 @@ public abstract class HystrixThreadPoolProperties {
 
         public Boolean getAllowMaximumSizeToDivergeFromCoreSize() {
             return allowMaximumSizeToDivergeFromCoreSize;
-        }
-
-        public Integer getMetricsRollingStatisticalWindowInMilliseconds() {
-            return rollingStatisticalWindowInMilliseconds;
-        }
-
-        public Integer getMetricsRollingStatisticalWindowBuckets() {
-            return rollingStatisticalWindowBuckets;
         }
 
         public Setter withCoreSize(int value) {
@@ -310,19 +274,5 @@ public abstract class HystrixThreadPoolProperties {
             this.allowMaximumSizeToDivergeFromCoreSize = value;
             return this;
         }
-
-        public Setter withMetricsRollingStatisticalWindowInMilliseconds(int value) {
-            this.rollingStatisticalWindowInMilliseconds = value;
-            return this;
-        }
-
-        public Setter withMetricsRollingStatisticalWindowBuckets(int value) {
-            this.rollingStatisticalWindowBuckets = value;
-            return this;
-        }
-
-
-
-
     }
 }

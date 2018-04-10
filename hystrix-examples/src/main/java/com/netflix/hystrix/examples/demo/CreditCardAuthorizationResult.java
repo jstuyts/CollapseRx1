@@ -46,7 +46,7 @@ public class CreditCardAuthorizationResult {
      * @param isResponseDuplicate
      *            boolean whether the response is the result of a duplicate transaction returning a previously submitted transaction result
      *            <p>
-     *            This is for handling the idempotent double-posting scenario, such as retries after timeouts.
+     *            This is for handling the idempotent double-posting scenario.
      */
     private CreditCardAuthorizationResult(boolean success, String value, String value2, boolean isResponseDuplicate) {
         this.success = success;

@@ -20,9 +20,9 @@ abstract public class TestHystrixObservableCommand<T> extends HystrixObservableC
     private final TestCommandBuilder builder;
 
     public TestHystrixObservableCommand(TestCommandBuilder builder) {
-        super(builder.owner, builder.dependencyKey, builder.threadPoolKey, builder.circuitBreaker, builder.threadPool,
-                builder.commandPropertiesDefaults, builder.threadPoolPropertiesDefaults, builder.metrics,
-                builder.fallbackSemaphore, builder.executionSemaphore, TEST_PROPERTIES_FACTORY, builder.executionHook);
+        super(builder.owner, builder.dependencyKey, builder.threadPoolKey, builder.threadPool,
+                builder.commandPropertiesDefaults, builder.threadPoolPropertiesDefaults,
+                builder.executionSemaphore, TEST_PROPERTIES_FACTORY, builder.executionHook);
         this.builder = builder;
     }
 
@@ -34,11 +34,7 @@ abstract public class TestHystrixObservableCommand<T> extends HystrixObservableC
         return new TestCommandBuilder(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
     }
 
-    static TestCommandBuilder testPropsBuilder(HystrixCircuitBreakerTest.TestCircuitBreaker circuitBreaker) {
-        return new TestCommandBuilder(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE).setCircuitBreaker(circuitBreaker);
-    }
-
-    static TestCommandBuilder testPropsBuilder(HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy, HystrixCircuitBreakerTest.TestCircuitBreaker circuitBreaker) {
-        return new TestCommandBuilder(isolationStrategy).setCircuitBreaker(circuitBreaker);
+    static TestCommandBuilder testPropsBuilder(HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
+        return new TestCommandBuilder(isolationStrategy);
     }
 }

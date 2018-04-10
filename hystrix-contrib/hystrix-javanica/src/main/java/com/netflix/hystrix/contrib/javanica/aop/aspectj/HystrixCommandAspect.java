@@ -27,10 +27,7 @@ import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.command.HystrixCommandFactory;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
-import com.netflix.hystrix.contrib.javanica.exception.FallbackInvocationException;
 import com.netflix.hystrix.contrib.javanica.utils.AopUtils;
-import com.netflix.hystrix.contrib.javanica.utils.FallbackMethod;
-import com.netflix.hystrix.contrib.javanica.utils.MethodProvider;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.apache.commons.lang3.StringUtils;
@@ -53,9 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getDeclaredMethod;
-import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromTarget;
-import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodInfo;
+import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.*;
 import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeaving;
 import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.getAjcMethodAroundAdvice;
 
@@ -152,12 +147,7 @@ public class HystrixCommandAspect {
         Throwable cause = e.getCause();
 
         // latest exception in flow should be propagated to end user
-        if (e.getFallbackException() instanceof FallbackInvocationException) {
-            cause = e.getFallbackException().getCause();
-            if (cause instanceof HystrixRuntimeException) {
-                cause = getCause((HystrixRuntimeException) cause);
-            }
-        } else if (cause instanceof CommandActionExecutionException) { // this situation is possible only if a callee throws an exception which type extends Throwable directly
+        if (cause instanceof CommandActionExecutionException) { // this situation is possible only if a callee throws an exception which type extends Throwable directly
             CommandActionExecutionException commandActionExecutionException = (CommandActionExecutionException) cause;
             cause = commandActionExecutionException.getCause();
         }
@@ -184,7 +174,6 @@ public class HystrixCommandAspect {
                     .args(args).method(method).obj(obj).proxyObj(proxy)
                     .joinPoint(joinPoint);
 
-            setFallbackMethod(builder, obj.getClass(), method);
             builder = setDefaultProperties(builder, obj.getClass(), joinPoint);
             return builder;
         }
@@ -250,13 +239,6 @@ public class HystrixCommandAspect {
             builder.hystrixCommand(hystrixCommand);
             builder.executionType(ExecutionType.getExecutionType(batchReturnType));
             builder.observable(observable);
-            FallbackMethod fallbackMethod = MethodProvider.getInstance().getFallbackMethod(obj.getClass(), batchCommandMethod);
-            if (fallbackMethod.isPresent()) {
-                fallbackMethod.validateReturnType(batchCommandMethod);
-                builder
-                        .fallbackMethod(fallbackMethod.getMethod())
-                        .fallbackExecutionType(ExecutionType.getExecutionType(fallbackMethod.getMethod().getReturnType()));
-            }
             return builder.build();
         }
     }
@@ -334,17 +316,6 @@ public class HystrixCommandAspect {
             if (StringUtils.isNotBlank(defaultProperties.threadPoolKey())) {
                 builder.defaultThreadPoolKey(defaultProperties.threadPoolKey());
             }
-        }
-        return builder;
-    }
-
-    private static MetaHolder.Builder setFallbackMethod(MetaHolder.Builder builder, Class<?> declaringClass, Method commandMethod) {
-        FallbackMethod fallbackMethod = MethodProvider.getInstance().getFallbackMethod(declaringClass, commandMethod);
-        if (fallbackMethod.isPresent()) {
-            fallbackMethod.validateReturnType(commandMethod);
-            builder
-                    .fallbackMethod(fallbackMethod.getMethod())
-                    .fallbackExecutionType(ExecutionType.getExecutionType(fallbackMethod.getMethod().getReturnType()));
         }
         return builder;
     }

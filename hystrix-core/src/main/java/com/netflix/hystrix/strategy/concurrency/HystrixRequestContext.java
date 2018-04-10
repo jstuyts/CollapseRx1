@@ -15,13 +15,12 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
-import java.io.Closeable;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixRequestCache;
-import com.netflix.hystrix.HystrixRequestLog;
+
+import java.io.Closeable;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Contains the state and manages the lifecycle of {@link HystrixRequestVariableDefault} objects that provide request scoped (rather than only thread scoped) variables so that multiple threads within
@@ -29,7 +28,6 @@ import com.netflix.hystrix.HystrixRequestLog;
  * single request can share state:
  * <ul>
  * <li>request scoped caching as in {@link HystrixRequestCache} for de-duping {@link HystrixCommand} executions</li>
- * <li>request scoped log of all events as in {@link HystrixRequestLog}</li>
  * <li>automated batching of {@link HystrixCommand} executions within the scope of a request as in {@link HystrixCollapser}</li>
  * </ul>
  * <p>

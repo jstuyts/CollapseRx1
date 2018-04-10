@@ -18,7 +18,7 @@ package com.netflix.hystrix;
 import com.netflix.hystrix.util.InternMap;
 
 /**
- * A key to represent a {@link HystrixThreadPool} for monitoring, metrics publishing, caching and other such uses.
+ * A key to represent a {@link HystrixThreadPool} for monitoring, caching and other such uses.
  * <p>
  * This interface is intended to work natively with Enums so that implementing code can be an enum that implements this interface.
  */

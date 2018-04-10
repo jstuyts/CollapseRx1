@@ -15,16 +15,14 @@
  */
 package com.netflix.hystrix;
 
-import rx.Observable;
-
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
-import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
+import rx.Observable;
 
 /**
  * Used to wrap code that will execute potentially risky functionality (typically meaning a service call over the network)
- * with fault and latency tolerance, statistics and performance metrics capture, circuit breaker and bulkhead functionality.
+ * with fault and latency tolerance functionality.
  * This command should be used for a purely non-blocking call pattern. The caller of this command will be subscribed to the Observable<R> returned by the run() method.
  * 
  * @param <R>
@@ -50,41 +48,6 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
         this(new Setter(group));
     }
 
-    /**
-     *
-     * Overridden to true so that all onNext emissions are captured
-     *
-     * @return if onNext events should be reported on
-     * This affects {@link HystrixRequestLog}, and {@link HystrixEventNotifier} currently.  Metrics/Hooks later
-     */
-    @Override
-    protected boolean shouldOutputOnNextEvents() {
-        return true;
-    }
-
-    @Override
-    protected String getFallbackMethodName() {
-        return "resumeWithFallback";
-    }
-
-    @Override
-    protected boolean isFallbackUserDefined() {
-        Boolean containsFromMap = commandContainsFallback.get(commandKey);
-        if (containsFromMap != null) {
-            return containsFromMap;
-        } else {
-            Boolean toInsertIntoMap;
-            try {
-                getClass().getDeclaredMethod("resumeWithFallback");
-                toInsertIntoMap = true;
-            } catch (NoSuchMethodException nsme) {
-                toInsertIntoMap = false;
-            }
-            commandContainsFallback.put(commandKey, toInsertIntoMap);
-            return toInsertIntoMap;
-        }
-    }
-
     @Override
     protected boolean commandIsScalar() {
         return false;
@@ -93,7 +56,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
     /**
      * Construct a {@link HystrixObservableCommand} with defined {@link Setter} that allows injecting property and strategy overrides and other optional arguments.
      * <p>
-     * NOTE: The {@link HystrixCommandKey} is used to associate a {@link HystrixObservableCommand} with {@link HystrixCircuitBreaker}, {@link HystrixCommandMetrics} and other objects.
+     * NOTE: The {@link HystrixCommandKey} is used to associate a {@link HystrixObservableCommand} with other objects.
      * <p>
      * Do not create multiple {@link HystrixObservableCommand} implementations with the same {@link HystrixCommandKey} but different injected default properties as the first instantiated will win.
      * <p>
@@ -105,7 +68,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      */
     protected HystrixObservableCommand(Setter setter) {
         // use 'null' to specify use the default
-        this(setter.groupKey, setter.commandKey, setter.threadPoolKey, null, null, setter.commandPropertiesDefaults, setter.threadPoolPropertiesDefaults, null, null, null, null, null);
+        this(setter.groupKey, setter.commandKey, setter.threadPoolKey, null, setter.commandPropertiesDefaults, setter.threadPoolPropertiesDefaults, null, null, null);
     }
 
     /**
@@ -115,11 +78,10 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      * <p>
      * Most of the args will revert to a valid default if 'null' is passed in.
      */
-    HystrixObservableCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
+    HystrixObservableCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixThreadPool threadPool,
             HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
-            HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore,
-            HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
-        super(group, key, threadPoolKey, circuitBreaker, threadPool, commandPropertiesDefaults, threadPoolPropertiesDefaults, metrics, fallbackSemaphore, executionSemaphore, propertiesStrategy, executionHook);
+            TryableSemaphore executionSemaphore, HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
+        super(group, key, threadPoolKey, threadPool, commandPropertiesDefaults, threadPoolPropertiesDefaults, executionSemaphore, propertiesStrategy, executionHook);
     }
 
     /**
@@ -130,8 +92,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      * Example:
      * <pre> {@code
      *  Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("GroupName"))
-                .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"))
-                .andEventNotifier(notifier);
+                .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"));
      * } </pre>
      * 
      * @NotThreadSafe
@@ -181,11 +142,11 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
 
         /**
          * @param commandKey
-         *            {@link HystrixCommandKey} used to identify a {@link HystrixObservableCommand} instance for statistics, circuit-breaker, properties, etc.
+         *            {@link HystrixCommandKey} used to identify a {@link HystrixObservableCommand} instance for properties, etc.
          *            <p>
          *            By default this will be derived from the instance class name.
          *            <p>
-         *            NOTE: Every unique {@link HystrixCommandKey} will result in new instances of {@link HystrixCircuitBreaker}, {@link HystrixCommandMetrics} and {@link HystrixCommandProperties}.
+         *            NOTE: Every unique {@link HystrixCommandKey} will result in new instance of {@link HystrixCommandProperties}.
          *            Thus,
          *            the number of variants should be kept to a finite and reasonable number to avoid high-memory usage or memory leacks.
          *            <p>
@@ -228,32 +189,8 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      */
     protected abstract Observable<R> construct();
 
-    /**
-     * If {@link #observe()} or {@link #toObservable()} fails in any way then this method will be invoked to provide an opportunity to return a fallback response.
-     * <p>
-     * This should do work that does not require network transport to produce.
-     * <p>
-     * In other words, this should be a static or cached result that can immediately be returned upon failure.
-     * <p>
-     * If network traffic is wanted for fallback (such as going to MemCache) then the fallback implementation should invoke another {@link HystrixObservableCommand} instance that protects against
-     * that network
-     * access and possibly has another level of fallback that does not involve network access.
-     * <p>
-     * DEFAULT BEHAVIOR: It throws UnsupportedOperationException.
-     * 
-     * @return R or UnsupportedOperationException if not implemented
-     */
-    protected Observable<R> resumeWithFallback() {
-        return Observable.error(new UnsupportedOperationException("No fallback available."));
-    }
-
     @Override
     final protected Observable<R> getExecutionObservable() {
         return construct();
-    }
-    
-    @Override
-    final protected Observable<R> getFallbackObservable() {
-        return resumeWithFallback();
     }
 }

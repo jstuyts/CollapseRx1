@@ -23,11 +23,9 @@ package com.netflix.hystrix.contrib.javanica.command;
 public class CommandActions {
 
     private final CommandAction commandAction;
-    private final CommandAction fallbackAction;
 
     public CommandActions(Builder builder) {
         this.commandAction = builder.commandAction;
-        this.fallbackAction = builder.fallbackAction;
     }
 
     public static Builder builder() {
@@ -38,25 +36,11 @@ public class CommandActions {
         return commandAction;
     }
 
-    public CommandAction getFallbackAction() {
-        return fallbackAction;
-    }
-
-    public boolean hasFallbackAction() {
-        return fallbackAction != null;
-    }
-
     public static class Builder {
         private CommandAction commandAction;
-        private CommandAction fallbackAction;
 
         public Builder commandAction(CommandAction pCommandAction) {
             this.commandAction = pCommandAction;
-            return this;
-        }
-
-        public Builder fallbackAction(CommandAction pFallbackAction) {
-            this.fallbackAction = pFallbackAction;
             return this;
         }
 

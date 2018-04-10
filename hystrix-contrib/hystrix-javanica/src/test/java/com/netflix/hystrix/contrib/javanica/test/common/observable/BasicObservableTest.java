@@ -15,8 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.test.common.observable;
 
-import com.netflix.hystrix.HystrixEventType;
-import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.ObservableExecutionMode;
 import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
@@ -24,17 +22,10 @@ import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
-import rx.Completable;
-import rx.Observable;
-import rx.Observer;
-import rx.Single;
-import rx.Subscriber;
+import rx.*;
 import rx.functions.Action1;
-import rx.functions.Func0;
 
-import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by dmgcodevil
@@ -87,44 +78,33 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
                 assertEquals("name: 1", user.getName());
             }
         });
-        assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getUser");
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
     @Test
     public void testGetCompletableUser(){
         userService.getCompletableUser("1", "name: ");
-        com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getCompletableUser");
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
     @Test
-    public void testGetCompletableUserWithRegularFallback() {
-        Completable completable = userService.getCompletableUserWithRegularFallback(null, "name: ");
+    public void testGetCompletableUser2() {
+        Completable completable = userService.getCompletableUser2(null, "name: ");
         completable.<User>toObservable().subscribe(new Action1<User>() {
             @Override
             public void call(User user) {
                 assertEquals("default_id", user.getId());
             }
         });
-        com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getCompletableUserWithRegularFallback");
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
     }
 
     @Test
-    public void testGetCompletableUserWithRxFallback() {
-        Completable completable = userService.getCompletableUserWithRxFallback(null, "name: ");
+    public void testGetCompletableUser3() {
+        Completable completable = userService.getCompletableUser3(null, "name: ");
         completable.<User>toObservable().subscribe(new Action1<User>() {
             @Override
             public void call(User user) {
                 assertEquals("default_id", user.getId());
             }
         });
-        com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getCompletableUserWithRxFallback");
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
     }
 
     @Test
@@ -137,103 +117,57 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
                 assertEquals(id, user.getId());
             }
         });
-        com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getSingleUser");
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
     @Test
-    public void testGetSingleUserWithRegularFallback(){
-        Single<User> user = userService.getSingleUserWithRegularFallback(null, "name: ");
+    public void testGetSingleUser2(){
+        Single<User> user = userService.getSingleUser2(null, "name: ");
         user.subscribe(new Action1<User>() {
             @Override
             public void call(User user) {
                 assertEquals("default_id", user.getId());
             }
         });
-        com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getSingleUserWithRegularFallback");
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
     }
 
     @Test
-    public void testGetSingleUserWithRxFallback(){
-        Single<User> user = userService.getSingleUserWithRxFallback(null, "name: ");
+    public void testGetSingleUser3(){
+        Single<User> user = userService.getSingleUser3(null, "name: ");
         user.subscribe(new Action1<User>() {
             @Override
             public void call(User user) {
                 assertEquals("default_id", user.getId());
             }
         });
-        com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getSingleUserWithRxFallback");
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
     }
 
     @Test
-    public void testGetUserWithRegularFallback() {
+    public void testGetUser() {
         final User exUser = new User("def", "def");
-        Observable<User> userObservable = userService.getUserRegularFallback(" ", "");
+        Observable<User> userObservable = userService.getUser4(" ", "");
         // blocking
         assertEquals(exUser, userObservable.toBlocking().single());
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getUserRegularFallback");
-        // confirm that command has failed
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-        // and that fallback was successful
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
     }
 
     @Test
-    public void testGetUserWithRxFallback() {
+    public void testGetUser2() {
         final User exUser = new User("def", "def");
 
         // blocking
-        assertEquals(exUser, userService.getUserRxFallback(" ", "").toBlocking().single());
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getUserRxFallback");
-        // confirm that command has failed
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-        // and that fallback was successful
-        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+        assertEquals(exUser, userService.getUser5(" ", "").toBlocking().single());
     }
 
     @Test
-    public void testGetUserWithRxCommandFallback() {
+    public void testGetUser3() {
         final User exUser = new User("def", "def");
 
         // blocking
-        Observable<User> userObservable = userService.getUserRxCommandFallback(" ", "");
+        Observable<User> userObservable = userService.getUser6(" ", "");
         assertEquals(exUser, userObservable.toBlocking().single());
-        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        com.netflix.hystrix.HystrixInvokableInfo getUserRxCommandFallback = getHystrixCommandByKey("getUserRxCommandFallback");
-        com.netflix.hystrix.HystrixInvokableInfo rxCommandFallback = getHystrixCommandByKey("rxCommandFallback");
-        // confirm that command has failed
-        assertTrue(getUserRxCommandFallback.getExecutionEvents().contains(HystrixEventType.FAILURE));
-        assertTrue(getUserRxCommandFallback.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
-        // and that fallback command was successful
-        assertTrue(rxCommandFallback.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
 
     public static class UserService {
-
-        private User regularFallback(String id, String name) {
-            return new User("def", "def");
-        }
-
-        private Observable<User> rxFallback(String id, String name) {
-            return Observable.just(new User("def", "def"));
-        }
-
-        @HystrixCommand(observableExecutionMode = ObservableExecutionMode.EAGER)
-        private Observable<User> rxCommandFallback(String id, String name, Throwable throwable) {
-            if (throwable instanceof GetUserException && "getUserRxCommandFallback has failed".equals(throwable.getMessage())) {
-                return Observable.just(new User("def", "def"));
-            } else {
-                throw new IllegalStateException();
-            }
-
-        }
 
         @HystrixCommand
         public Observable<User> getUser(final String id, final String name) {
@@ -247,27 +181,14 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
             return createObservable(id, name).toCompletable();
         }
 
-        @HystrixCommand(fallbackMethod = "completableUserRegularFallback")
-        public Completable getCompletableUserWithRegularFallback(final String id, final String name) {
+        @HystrixCommand
+        public Completable getCompletableUser2(final String id, final String name) {
             return getCompletableUser(id, name);
         }
 
-        @HystrixCommand(fallbackMethod = "completableUserRxFallback")
-        public Completable getCompletableUserWithRxFallback(final String id, final String name) {
+        @HystrixCommand
+        public Completable getCompletableUser3(final String id, final String name) {
             return getCompletableUser(id, name);
-        }
-
-        public User completableUserRegularFallback(final String id, final String name) {
-            return new User("default_id", "default_name");
-        }
-
-        public Completable completableUserRxFallback(final String id, final String name) {
-            return Completable.fromCallable(new Func0<User>() {
-                @Override
-                public User call() {
-                    return new User("default_id", "default_name");
-                }
-            });
         }
 
         @HystrixCommand
@@ -276,39 +197,31 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
             return createObservable(id, name).toSingle();
         }
 
-        @HystrixCommand(fallbackMethod = "singleUserRegularFallback")
-        public Single<User> getSingleUserWithRegularFallback(final String id, final String name) {
+        @HystrixCommand
+        public Single<User> getSingleUser2(final String id, final String name) {
             return getSingleUser(id, name);
         }
 
-        @HystrixCommand(fallbackMethod = "singleUserRxFallback")
-        public Single<User> getSingleUserWithRxFallback(final String id, final String name) {
+        @HystrixCommand
+        public Single<User> getSingleUser3(final String id, final String name) {
             return getSingleUser(id, name);
         }
 
-        User singleUserRegularFallback(final String id, final String name) {
-            return new User("default_id", "default_name");
-        }
-
-        Single<User> singleUserRxFallback(final String id, final String name) {
-            return createObservable("default_id", "default_name").toSingle();
-        }
-
-        @HystrixCommand(fallbackMethod = "regularFallback", observableExecutionMode = ObservableExecutionMode.LAZY)
-        public Observable<User> getUserRegularFallback(final String id, final String name) {
+        @HystrixCommand(observableExecutionMode = ObservableExecutionMode.LAZY)
+        public Observable<User> getUser4(final String id, final String name) {
             validate(id, name, "getUser has failed");
             return createObservable(id, name);
         }
 
-        @HystrixCommand(fallbackMethod = "rxFallback")
-        public Observable<User> getUserRxFallback(final String id, final String name) {
-            validate(id, name, "getUserRxFallback has failed");
+        @HystrixCommand
+        public Observable<User> getUser5(final String id, final String name) {
+            validate(id, name, "getUser has failed");
             return createObservable(id, name);
         }
 
-        @HystrixCommand(fallbackMethod = "rxCommandFallback", observableExecutionMode = ObservableExecutionMode.LAZY)
-        public Observable<User> getUserRxCommandFallback(final String id, final String name) {
-            validate(id, name, "getUserRxCommandFallback has failed");
+        @HystrixCommand(observableExecutionMode = ObservableExecutionMode.LAZY)
+        public Observable<User> getUser6(final String id, final String name) {
+            validate(id, name, "getUser has failed");
             return createObservable(id, name);
         }
 

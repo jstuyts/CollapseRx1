@@ -5,7 +5,6 @@ dependencies {
     compileApi libraries.archaiusCore
     compileApi libraries.rxjava
     compile libraries.slf4jApi
-    compileApi libraries.hdrhistogram
     testCompile libraries.junit
     testCompile project(':collapserx1-junit')
 }
@@ -39,10 +38,11 @@ jar {
 jmh {
     fork = 10
     iterations = 3
-    jmhVersion = '1.15'
+    jmhVersion = rootProject.ext.jmhVersion
     profilers = ['gc']
     threads = 8
     warmup = '1s'
     warmupBatchSize = 1
     warmupIterations = 5
+    jvmArgs = ['-Djmh.separateClasspathJAR=true']
 }

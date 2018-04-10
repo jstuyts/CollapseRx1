@@ -15,26 +15,20 @@
  */
 package com.netflix.hystrix.strategy;
 
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
-import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
-import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHookDefault;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherDefault;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixDynamicProperties;
 import com.netflix.hystrix.strategy.properties.HystrixDynamicPropertiesSystemProperties;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategyDefault;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Registry for plugin implementations that allows global override and handles the retrieval of correct implementation based on order of precedence:
@@ -56,9 +50,7 @@ public class HystrixPlugins {
     //See https://en.wikipedia.org/wiki/Initialization-on-demand_holder_idiom
     private static class LazyHolder { private static final HystrixPlugins INSTANCE = HystrixPlugins.create(); }
     private final ClassLoader classLoader;
-    /* package */ final AtomicReference<HystrixEventNotifier> notifier = new AtomicReference<HystrixEventNotifier>();
     /* package */ final AtomicReference<HystrixConcurrencyStrategy> concurrencyStrategy = new AtomicReference<HystrixConcurrencyStrategy>();
-    /* package */ final AtomicReference<HystrixMetricsPublisher> metricsPublisher = new AtomicReference<HystrixMetricsPublisher>();
     /* package */ final AtomicReference<HystrixPropertiesStrategy> propertiesFactory = new AtomicReference<HystrixPropertiesStrategy>();
     /* package */ final AtomicReference<HystrixCommandExecutionHook> commandExecutionHook = new AtomicReference<HystrixCommandExecutionHook>();
     private final HystrixDynamicProperties dynamicProperties;
@@ -107,50 +99,9 @@ public class HystrixPlugins {
      * Reset all of the HystrixPlugins to null.  You may invoke this directly, or it also gets invoked via <code>Hystrix.reset()</code>
      */
     public static void reset() {
-        getInstance().notifier.set(null);
         getInstance().concurrencyStrategy.set(null);
-        getInstance().metricsPublisher.set(null);
         getInstance().propertiesFactory.set(null);
         getInstance().commandExecutionHook.set(null);
-        HystrixMetricsPublisherFactory.reset();
-    }
-
-    /**
-     * Retrieve instance of {@link HystrixEventNotifier} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
-     * <p>
-     * Override default by using {@link #registerEventNotifier(HystrixEventNotifier)} or setting property (via Archaius): <code>hystrix.plugin.HystrixEventNotifier.implementation</code> with the full classname to
-     * load.
-     * 
-     * @return {@link HystrixEventNotifier} implementation to use
-     */
-    public HystrixEventNotifier getEventNotifier() {
-        if (notifier.get() == null) {
-            // check for an implementation from Archaius first
-            Object impl = getPluginImplementation(HystrixEventNotifier.class);
-            if (impl == null) {
-                // nothing set via Archaius so initialize with default
-                notifier.compareAndSet(null, HystrixEventNotifierDefault.getInstance());
-                // we don't return from here but call get() again in case of thread-race so the winner will always get returned
-            } else {
-                // we received an implementation from Archaius so use it
-                notifier.compareAndSet(null, (HystrixEventNotifier) impl);
-            }
-        }
-        return notifier.get();
-    }
-
-    /**
-     * Register a {@link HystrixEventNotifier} implementation as a global override of any injected or default implementations.
-     * 
-     * @param impl
-     *            {@link HystrixEventNotifier} implementation
-     * @throws IllegalStateException
-     *             if called more than once or after the default was initialized (if usage occurs before trying to register)
-     */
-    public void registerEventNotifier(HystrixEventNotifier impl) {
-        if (!notifier.compareAndSet(null, impl)) {
-            throw new IllegalStateException("Another strategy was already registered.");
-        }
     }
 
     /**
@@ -187,44 +138,6 @@ public class HystrixPlugins {
      */
     public void registerConcurrencyStrategy(HystrixConcurrencyStrategy impl) {
         if (!concurrencyStrategy.compareAndSet(null, impl)) {
-            throw new IllegalStateException("Another strategy was already registered.");
-        }
-    }
-
-    /**
-     * Retrieve instance of {@link HystrixMetricsPublisher} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
-     * <p>
-     * Override default by using {@link #registerMetricsPublisher(HystrixMetricsPublisher)} or setting property (via Archaius): <code>hystrix.plugin.HystrixMetricsPublisher.implementation</code> with the full
-     * classname to load.
-     * 
-     * @return {@link HystrixMetricsPublisher} implementation to use
-     */
-    public HystrixMetricsPublisher getMetricsPublisher() {
-        if (metricsPublisher.get() == null) {
-            // check for an implementation from Archaius first
-            Object impl = getPluginImplementation(HystrixMetricsPublisher.class);
-            if (impl == null) {
-                // nothing set via Archaius so initialize with default
-                metricsPublisher.compareAndSet(null, HystrixMetricsPublisherDefault.getInstance());
-                // we don't return from here but call get() again in case of thread-race so the winner will always get returned
-            } else {
-                // we received an implementation from Archaius so use it
-                metricsPublisher.compareAndSet(null, (HystrixMetricsPublisher) impl);
-            }
-        }
-        return metricsPublisher.get();
-    }
-
-    /**
-     * Register a {@link HystrixMetricsPublisher} implementation as a global override of any injected or default implementations.
-     * 
-     * @param impl
-     *            {@link HystrixMetricsPublisher} implementation
-     * @throws IllegalStateException
-     *             if called more than once or after the default was initialized (if usage occurs before trying to register)
-     */
-    public void registerMetricsPublisher(HystrixMetricsPublisher impl) {
-        if (!metricsPublisher.compareAndSet(null, impl)) {
             throw new IllegalStateException("Another strategy was already registered.");
         }
     }

@@ -15,8 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.exception;
 
-import com.netflix.hystrix.exception.HystrixBadRequestException;
-
 /**
  * Util class to work with exceptions.
  */
@@ -30,30 +28,4 @@ public class ExceptionUtils {
     public static void propagateCause(Throwable throwable) throws CommandActionExecutionException {
         throw new CommandActionExecutionException(throwable.getCause());
     }
-
-    /**
-     * Wraps cause exception to {@link CommandActionExecutionException}.
-     *
-     * @param throwable the throwable
-     */
-    public static CommandActionExecutionException wrapCause(Throwable throwable) {
-        return new CommandActionExecutionException(throwable.getCause());
-    }
-
-    /**
-     * Gets actual exception if it's wrapped in {@link CommandActionExecutionException} or {@link HystrixBadRequestException}.
-     *
-     * @param e the exception
-     * @return unwrapped
-     */
-    public static Throwable unwrapCause(Throwable e) {
-        if (e instanceof CommandActionExecutionException) {
-            return e.getCause();
-        }
-        if (e instanceof HystrixBadRequestException) {
-            return e.getCause();
-        }
-        return e;
-    }
-
 }

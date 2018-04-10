@@ -15,16 +15,15 @@
  */
 package com.netflix.hystrix;
 
-import java.util.NoSuchElementException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import rx.functions.Action0;
+
+import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Lifecycle management of Hystrix.
@@ -66,14 +65,8 @@ public class Hystrix {
      * Reset logic that doesn't have time/TimeUnit arguments.
      */
     private static void _reset() {
-        // clear metrics
-        HystrixCommandMetrics.reset();
-        HystrixThreadPoolMetrics.reset();
-        HystrixCollapserMetrics.reset();
         // clear collapsers
         HystrixCollapser.reset();
-        // clear circuit breakers
-        HystrixCircuitBreaker.Factory.reset();
         HystrixPlugins.reset();
         HystrixPropertiesFactory.reset();
         currentCommand.set(new ConcurrentStack<HystrixCommandKey>());
@@ -122,10 +115,6 @@ public class Hystrix {
             }
 
         };
-    }
-
-    /* package */static void endCurrentThreadExecutingCommand() {
-        endCurrentThreadExecutingCommand(currentCommand.get());
     }
 
     private static void endCurrentThreadExecutingCommand(ConcurrentStack<HystrixCommandKey> list) {

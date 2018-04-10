@@ -29,11 +29,7 @@ public interface HystrixInvokableInfo<R> {
 
     HystrixCollapserKey getOriginatingCollapserKey();
 
-    HystrixCommandMetrics getMetrics();
-
     HystrixCommandProperties getProperties();
-
-    boolean isCircuitBreakerOpen();
 
     boolean isExecutionComplete();
 
@@ -44,12 +40,6 @@ public interface HystrixInvokableInfo<R> {
     boolean isFailedExecution();
 
     Throwable getFailedExecutionException();
-
-    boolean isResponseFromFallback();
-
-    boolean isResponseTimedOut();
-
-    boolean isResponseShortCircuited();
 
     boolean isResponseFromCache();
 
@@ -62,8 +52,6 @@ public interface HystrixInvokableInfo<R> {
     List<HystrixEventType> getExecutionEvents();
 
     int getNumberEmissions();
-
-    int getNumberFallbackEmissions();
 
     int getNumberCollapsed();
 

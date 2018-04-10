@@ -19,7 +19,6 @@ import com.netflix.hystrix.HystrixExecutable;
 import com.netflix.hystrix.HystrixInvokable;
 import com.netflix.hystrix.HystrixObservable;
 import com.netflix.hystrix.contrib.javanica.annotation.ObservableExecutionMode;
-import com.netflix.hystrix.contrib.javanica.utils.FutureDecorator;
 import org.apache.commons.lang3.Validate;
 
 /**
@@ -53,10 +52,6 @@ public class CommandExecutor {
             }
             case ASYNCHRONOUS: {
                 HystrixExecutable executable = castToExecutable(invokable, executionType);
-                if (metaHolder.hasFallbackMethodCommand()
-                        && ExecutionType.ASYNCHRONOUS == metaHolder.getFallbackExecutionType()) {
-                    return new FutureDecorator(executable.queue());
-                }
                 return executable.queue();
             }
             case OBSERVABLE: {

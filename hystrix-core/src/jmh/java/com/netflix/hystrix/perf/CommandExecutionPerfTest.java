@@ -53,31 +53,19 @@ public class CommandExecutionPerfTest {
 
     private static HystrixCommandProperties.Setter threadIsolatedCommandDefaults = HystrixCommandProperties.Setter()
             .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)
-            .withRequestCacheEnabled(true)
-            .withRequestLogEnabled(true)
-            .withCircuitBreakerEnabled(true)
-            .withCircuitBreakerForceOpen(false);
+            .withRequestCacheEnabled(true);
 
     private static HystrixCommandProperties.Setter threadIsolatedFailFastCommandDefaults = HystrixCommandProperties.Setter()
             .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)
-            .withRequestCacheEnabled(true)
-            .withRequestLogEnabled(true)
-            .withCircuitBreakerEnabled(true)
-            .withCircuitBreakerForceOpen(true);
+            .withRequestCacheEnabled(true);
 
     private static HystrixCommandProperties.Setter semaphoreIsolatedCommandDefaults = HystrixCommandProperties.Setter()
             .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE)
-            .withRequestCacheEnabled(true)
-            .withRequestLogEnabled(true)
-            .withCircuitBreakerEnabled(true)
-            .withCircuitBreakerForceOpen(false);
+            .withRequestCacheEnabled(true);
 
     private static HystrixCommandProperties.Setter semaphoreIsolatedFailFastCommandDefaults = HystrixCommandProperties.Setter()
             .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE)
-            .withRequestCacheEnabled(true)
-            .withRequestLogEnabled(true)
-            .withCircuitBreakerEnabled(true)
-            .withCircuitBreakerForceOpen(true);
+            .withRequestCacheEnabled(true);
 
     private static HystrixThreadPoolProperties.Setter threadPoolDefaults = HystrixThreadPoolProperties.Setter()
             .withCoreSize(100);
@@ -141,11 +129,6 @@ public class CommandExecutionPerfTest {
                 protected Integer run() throws Exception {
                     Blackhole.consumeCPU(blackholeConsumption);
                     return 1;
-                }
-
-                @Override
-                protected Integer getFallback() {
-                    return 2;
                 }
             };
         }

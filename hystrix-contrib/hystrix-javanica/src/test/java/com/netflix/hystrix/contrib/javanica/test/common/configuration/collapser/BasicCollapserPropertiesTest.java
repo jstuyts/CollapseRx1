@@ -15,9 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.test.common.configuration.collapser;
 
-import com.netflix.hystrix.HystrixEventType;
-import com.netflix.hystrix.HystrixInvokableInfo;
-import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
@@ -33,7 +30,6 @@ import java.util.concurrent.ExecutionException;
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.MAX_REQUESTS_IN_BATCH;
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.TIMER_DELAY_IN_MILLISECONDS;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by dmgcodevil
@@ -61,14 +57,6 @@ public abstract class BasicCollapserPropertiesTest extends BasicHystrixTest {
         assertEquals("name: 2", u2.getName());
         assertEquals("name: 3", u3.getName());
         assertEquals("name: 4", u4.getName());
-        assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                .getAllExecutedCommands().iterator().next();
-        assertEquals("getUsers", command.getCommandKey().name());
-        // confirm that it was a COLLAPSED command execution
-        assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
-        // and that it was successful
-        assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
     public static class UserService {

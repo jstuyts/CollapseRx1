@@ -1,8 +1,0 @@
-dependencies {
-    compileApi project(':collapserx1-core')
-	compile project(':collapserx1-serialization')
-    compileApi libraries.rxnetty
-    testCompile libraries.junit
-    testCompile libraries.powermockEasymockReleaseFull
-    testCompile libraries.easymock
-}

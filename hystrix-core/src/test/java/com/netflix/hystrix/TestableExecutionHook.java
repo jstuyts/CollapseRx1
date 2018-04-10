@@ -15,14 +15,12 @@
  */
 package com.netflix.hystrix;
 
-import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import rx.Notification;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 class TestableExecutionHook extends HystrixCommandExecutionHook {
 
@@ -33,7 +31,6 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
     StringBuilder executionSequence = new StringBuilder();
     List<Notification<?>> commandEmissions = new ArrayList<Notification<?>>();
     List<Notification<?>> executionEmissions = new ArrayList<Notification<?>>();
-    List<Notification<?>> fallbackEmissions = new ArrayList<Notification<?>>();
 
     public boolean commandEmissionsMatch(int numOnNext, int numOnError, int numOnCompleted) {
         return eventsMatch(commandEmissions, numOnNext, numOnError, numOnCompleted);
@@ -41,10 +38,6 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
 
     public boolean executionEventsMatch(int numOnNext, int numOnError, int numOnCompleted) {
         return eventsMatch(executionEmissions, numOnNext, numOnError, numOnCompleted);
-    }
-
-    public boolean fallbackEventsMatch(int numOnNext, int numOnError, int numOnCompleted) {
-        return eventsMatch(fallbackEmissions, numOnNext, numOnError, numOnCompleted);
     }
 
     private boolean eventsMatch(List<Notification<?>> l, int numOnNext, int numOnError, int numOnCompleted) {
@@ -95,10 +88,6 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
 
     public Throwable getExecutionException() {
         return getException(executionEmissions);
-    }
-
-    public Throwable getFallbackException() {
-        return getException(fallbackEmissions);
     }
 
     private Throwable getException(List<Notification<?>> l) {
@@ -178,33 +167,6 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
     }
 
     @Override
-    public <T> void onFallbackStart(HystrixInvokable<T> commandInstance) {
-        super.onFallbackStart(commandInstance);
-        recordHookCall(executionSequence, "onFallbackStart");
-    }
-
-    @Override
-    public <T> T onFallbackEmit(HystrixInvokable<T> commandInstance, T value) {
-        fallbackEmissions.add(Notification.createOnNext(value));
-        recordHookCall(executionSequence, "onFallbackEmit");
-        return super.onFallbackEmit(commandInstance, value);
-    }
-
-    @Override
-    public <T> Exception onFallbackError(HystrixInvokable<T> commandInstance, Exception e) {
-        fallbackEmissions.add(Notification.createOnError(e));
-        recordHookCall(executionSequence, "onFallbackError");
-        return super.onFallbackError(commandInstance, e);
-    }
-
-    @Override
-    public <T> void onFallbackSuccess(HystrixInvokable<T> commandInstance) {
-        fallbackEmissions.add(Notification.createOnCompleted());
-        recordHookCall(executionSequence, "onFallbackSuccess");
-        super.onFallbackSuccess(commandInstance);
-    }
-
-    @Override
     public <T> void onCacheHit(HystrixInvokable<T> commandInstance) {
         super.onCacheHit(commandInstance);
         recordHookCall(executionSequence, "onCacheHit");
@@ -214,53 +176,5 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
     public <T> void onUnsubscribe(HystrixInvokable<T> commandInstance) {
         super.onUnsubscribe(commandInstance);
         recordHookCall(executionSequence, "onUnsubscribe");
-    }
-
-    /**
-     * DEPRECATED METHODS FOLLOW.  The string representation starts with `!` to distinguish
-     */
-
-    AtomicInteger startExecute = new AtomicInteger();
-    Object endExecuteSuccessResponse = null;
-    Exception endExecuteFailureException = null;
-    HystrixRuntimeException.FailureType endExecuteFailureType = null;
-    AtomicInteger startRun = new AtomicInteger();
-    Object runSuccessResponse = null;
-    Exception runFailureException = null;
-    AtomicInteger startFallback = new AtomicInteger();
-    Object fallbackSuccessResponse = null;
-    Exception fallbackFailureException = null;
-    AtomicInteger threadStart = new AtomicInteger();
-    AtomicInteger threadComplete = new AtomicInteger();
-    AtomicInteger cacheHit = new AtomicInteger();
-
-    @Override
-    public <T> T onFallbackSuccess(HystrixInvokable<T> commandInstance, T response) {
-        recordHookCall(executionSequence, "!onFallbackSuccess");
-        return super.onFallbackSuccess(commandInstance, response);
-    }
-
-    @Override
-    public <T> T onComplete(HystrixInvokable<T> commandInstance, T response) {
-        recordHookCall(executionSequence, "!onComplete");
-        return super.onComplete(commandInstance, response);
-    }
-
-    @Override
-    public <T> void onRunStart(HystrixInvokable<T> commandInstance) {
-        super.onRunStart(commandInstance);
-        recordHookCall(executionSequence, "!onRunStart");
-    }
-
-    @Override
-    public <T> T onRunSuccess(HystrixInvokable<T> commandInstance, T response) {
-        recordHookCall(executionSequence, "!onRunSuccess");
-        return super.onRunSuccess(commandInstance, response);
-    }
-
-    @Override
-    public <T> Exception onRunError(HystrixInvokable<T> commandInstance, Exception e) {
-        recordHookCall(executionSequence, "!onRunError");
-        return super.onRunError(commandInstance, e);
     }
 }

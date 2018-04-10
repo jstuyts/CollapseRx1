@@ -15,27 +15,20 @@
  */
 package com.netflix.hystrix;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.hamcrest.core.Is.is;
-
 import com.netflix.hystrix.HystrixThreadPool.Factory;
 import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.concurrency.*;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
-
+import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import org.junit.Before;
 import org.junit.Test;
-
 import rx.Scheduler;
 import rx.functions.Action0;
 
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.*;
 
 public class HystrixThreadPoolTest {
     @Before
@@ -48,7 +41,7 @@ public class HystrixThreadPoolTest {
         // other unit tests will probably have run before this so get the count
         int count = Factory.threadPools.size();
 
-        HystrixThreadPool pool = Factory.getInstance(HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryTest"),
+        HystrixThreadPool pool = Factory.getInstance(HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryTestShutdown"),
                 HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder());
 
         assertEquals(count + 1, Factory.threadPools.size());
@@ -66,7 +59,7 @@ public class HystrixThreadPoolTest {
         // other unit tests will probably have run before this so get the count
         int count = Factory.threadPools.size();
 
-        HystrixThreadPool pool = Factory.getInstance(HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryTest"),
+        HystrixThreadPool pool = Factory.getInstance(HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryTestShutdownWithWait"),
                 HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder());
 
         assertEquals(count + 1, Factory.threadPools.size());
@@ -79,30 +72,8 @@ public class HystrixThreadPoolTest {
         assertTrue(pool.getExecutor().isShutdown());
     }
 
-    private static class HystrixMetricsPublisherThreadPoolContainer implements HystrixMetricsPublisherThreadPool {
-        private final HystrixThreadPoolMetrics hystrixThreadPoolMetrics;
-
-        private HystrixMetricsPublisherThreadPoolContainer(HystrixThreadPoolMetrics hystrixThreadPoolMetrics) {
-            this.hystrixThreadPoolMetrics = hystrixThreadPoolMetrics;
-        }
-
-        @Override
-        public void initialize() {
-        }
-
-        public HystrixThreadPoolMetrics getHystrixThreadPoolMetrics() {
-            return hystrixThreadPoolMetrics;
-        }
-    }
-
     @Test
     public void ensureThreadPoolInstanceIsTheOneRegisteredWithMetricsPublisherAndThreadPoolCache() throws IllegalAccessException, NoSuchFieldException {
-        HystrixPlugins.getInstance().registerMetricsPublisher(new HystrixMetricsPublisher() {
-            @Override
-            public HystrixMetricsPublisherThreadPool getMetricsPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
-                return new HystrixMetricsPublisherThreadPoolContainer(metrics);
-            }
-        });
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryConcurrencyTest");
         HystrixThreadPool poolOne = new HystrixThreadPool.HystrixThreadPoolDefault(
                 threadPoolKey, HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder());
@@ -110,14 +81,6 @@ public class HystrixThreadPoolTest {
                 threadPoolKey, HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder());
 
         assertThat(poolOne.getExecutor(), is(poolTwo.getExecutor())); //Now that we get the threadPool from the metrics object, this will always be equal
-        HystrixMetricsPublisherThreadPoolContainer hystrixMetricsPublisherThreadPool =
-                (HystrixMetricsPublisherThreadPoolContainer)HystrixMetricsPublisherFactory
-                        .createOrRetrievePublisherForThreadPool(threadPoolKey, null, null);
-        ThreadPoolExecutor threadPoolExecutor = hystrixMetricsPublisherThreadPool.getHystrixThreadPoolMetrics().getThreadPool();
-
-        //assert that both HystrixThreadPools share the same ThreadPoolExecutor as the one in HystrixMetricsPublisherThreadPool
-        assertTrue(threadPoolExecutor.equals(poolOne.getExecutor()) && threadPoolExecutor.equals(poolTwo.getExecutor()));
-        assertFalse(threadPoolExecutor.isShutdown());
 
         //Now the HystrixThreadPool ALWAYS has the same reference to the ThreadPoolExecutor so that it no longer matters which
         //wins to be inserted into the HystrixThreadPool.Factory.threadPools cache.

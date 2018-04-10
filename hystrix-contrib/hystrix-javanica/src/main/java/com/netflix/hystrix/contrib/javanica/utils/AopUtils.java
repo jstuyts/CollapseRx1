@@ -54,18 +54,6 @@ public final class AopUtils {
     }
 
     /**
-     * Gets a {@link Method} object from target object by specified method name.
-     *
-     * @param joinPoint  the {@link JoinPoint}
-     * @param methodName the method name
-     * @return a {@link Method} object or null if method with specified <code>methodName</code> doesn't exist
-     */
-    public static Method getMethodFromTarget(JoinPoint joinPoint, String methodName) {
-        return getDeclaredMethod(joinPoint.getTarget().getClass(), methodName,
-                getParameterTypes(joinPoint));
-    }
-
-    /**
      * Gets parameter types of the join point.
      *
      * @param joinPoint the join point

@@ -153,7 +153,7 @@ public abstract class HystrixPropertiesStrategy {
 
     /**
      * Construct an implementation of {@link com.netflix.hystrix.HystrixTimerThreadPoolProperties} for configuration of the timer thread pool
-     * that handles timeouts and collapser logic.
+     * that handles collapser logic.
      * <p>
      * Constructs instance of {@link HystrixPropertiesTimerThreadPoolDefault}.
      *
