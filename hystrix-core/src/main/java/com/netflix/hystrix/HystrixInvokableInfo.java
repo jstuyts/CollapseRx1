@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,7 @@ package com.netflix.hystrix;
 
 import java.util.List;
 
-public interface HystrixInvokableInfo<R> {
+public interface HystrixInvokableInfo {
 
     HystrixCommandGroupKey getCommandGroup();
 

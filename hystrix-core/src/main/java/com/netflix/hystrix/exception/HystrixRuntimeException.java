@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,7 @@ public class HystrixRuntimeException extends RuntimeException {
     private final Class<? extends HystrixInvokable> commandClass;
     private final FailureType failureCause;
 
-    public static enum FailureType {
+    public enum FailureType {
         BAD_REQUEST_EXCEPTION, COMMAND_EXCEPTION, REJECTED_THREAD_EXECUTION, REJECTED_SEMAPHORE_EXECUTION
     }
 

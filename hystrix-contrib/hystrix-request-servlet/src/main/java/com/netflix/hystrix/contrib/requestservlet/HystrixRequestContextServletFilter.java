@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,16 +15,10 @@
  */
 package com.netflix.hystrix.contrib.requestservlet;
 
-import java.io.IOException;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+
+import javax.servlet.*;
+import java.io.IOException;
 
 /**
  * Initializes the {@link HystrixRequestContext} at the beginning of each HTTP request and then cleans it up at the end.
@@ -57,7 +51,7 @@ public class HystrixRequestContextServletFilter implements Filter {
     }
 
     @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
+    public void init(FilterConfig filterConfig) {
 
     }
 

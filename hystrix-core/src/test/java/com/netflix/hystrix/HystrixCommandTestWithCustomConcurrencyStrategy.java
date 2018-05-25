@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -193,7 +193,7 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
         }
 
         @Override
-        protected Boolean run() throws Exception {
+        protected Boolean run() {
             return true;
         }
     }
@@ -207,7 +207,7 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
 
         @Override
         public <T> Callable<T> wrapCallable(Callable<T> callable) {
-            return new LoggingCallable<T>(callable);
+            return new LoggingCallable<>(callable);
         }
 
         @Override

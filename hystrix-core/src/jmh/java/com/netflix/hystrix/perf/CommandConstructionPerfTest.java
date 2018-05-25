@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2014 Netflix, Inc.
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +34,7 @@ public class CommandConstructionPerfTest {
     public HystrixCommand constructHystrixCommandByGroupKeyOnly() {
         return new HystrixCommand<Integer>(groupKey) {
             @Override
-            protected Integer run() throws Exception {
+            protected Integer run() {
                 return 1;
             }
         };

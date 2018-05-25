@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -115,9 +115,7 @@ public class MethodExecutionAction implements CommandAction {
             } else {
                 result = m.invoke(o, args);
             }
-        } catch (IllegalAccessException e) {
-            propagateCause(e);
-        } catch (InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException e) {
             propagateCause(e);
         }
         return result;
@@ -128,9 +126,7 @@ public class MethodExecutionAction implements CommandAction {
         try {
             m.setAccessible(true); // suppress Java language access
             result = m.invoke(o, args);
-        } catch (IllegalAccessException e) {
-            propagateCause(e);
-        } catch (InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException e) {
             propagateCause(e);
         }
         return result;

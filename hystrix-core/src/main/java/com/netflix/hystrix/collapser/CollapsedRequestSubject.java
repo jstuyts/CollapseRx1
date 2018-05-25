@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,6 @@ package com.netflix.hystrix.collapser;
 
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 import rx.Observable;
-import rx.functions.Action0;
 import rx.subjects.ReplaySubject;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -58,19 +57,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
             this.argument = arg;
         }
         this.subjectWithAccounting = subject
-                .doOnSubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        outstandingSubscriptions++;
-                    }
-                })
-                .doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        outstandingSubscriptions--;
-                        if (outstandingSubscriptions == 0) {
-                            containingBatch.remove(arg);
-                        }
+                .doOnSubscribe(() -> outstandingSubscriptions++)
+                .doOnUnsubscribe(() -> {
+                    outstandingSubscriptions--;
+                    if (outstandingSubscriptions == 0) {
+                        containingBatch.remove(arg);
                     }
                 });
     }
@@ -99,7 +90,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
      */
     @Override
     public void setResponse(T response) {
-        if (!isTerminated()) {
+        if (isNotTerminated()) {
             subject.onNext(response);
             valueSet.set(true);
             subject.onCompleted();
@@ -114,7 +105,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
      */
     @Override
     public void emitResponse(T response) {
-        if (!isTerminated()) {
+        if (isNotTerminated()) {
             subject.onNext(response);
             valueSet.set(true);
         } else {
@@ -124,7 +115,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
     @Override
     public void setComplete() {
-        if (!isTerminated()) {
+        if (isNotTerminated()) {
             subject.onCompleted();
         }
     }
@@ -135,7 +126,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
      * @param e synthetic error to set on initial command when no actual response is available
      */
     public void setExceptionIfResponseNotReceived(Exception e) {
-        if (!valueSet.get() && !isTerminated()) {
+        if (!valueSet.get() && isNotTerminated()) {
             subject.onError(e);
         }
     }
@@ -149,7 +140,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
     public Exception setExceptionIfResponseNotReceived(Exception e, String exceptionMessage) {
         Exception exception = e;
 
-        if (!valueSet.get() && !isTerminated()) {
+        if (!valueSet.get() && isNotTerminated()) {
             if (e == null) {
                 exception = new IllegalStateException(exceptionMessage);
             }
@@ -168,15 +159,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
      */
     @Override
     public void setException(Exception e) {
-        if (!isTerminated()) {
+        if (isNotTerminated()) {
             subject.onError(e);
         } else {
             throw new IllegalStateException("Response has already terminated so exception can not be set", e);
         }
     }
 
-    private boolean isTerminated() {
-        return (subject.hasCompleted() || subject.hasThrowable());
+    private boolean isNotTerminated() {
+        return !subject.hasCompleted() && !subject.hasThrowable();
     }
 
     public Observable<T> toObservable() {

@@ -16,7 +16,7 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
     private Service service;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         service = createService();
     }
 

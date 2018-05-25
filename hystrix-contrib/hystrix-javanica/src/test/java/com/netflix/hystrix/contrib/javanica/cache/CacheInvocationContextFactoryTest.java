@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.cache;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
@@ -24,12 +23,7 @@ import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 import com.netflix.hystrix.contrib.javanica.exception.HystrixCachingException;
 import org.junit.Test;
 
-
-import java.lang.annotation.Annotation;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Unit test for {@link CacheInvocationContextFactory}.
@@ -99,7 +93,7 @@ public class CacheInvocationContextFactoryTest {
                 .args(new Object[]{param1})
                 .obj(testCacheClass).build();
         // when
-        CacheInvocationContext<CacheResult> context = CacheInvocationContextFactory.createCacheResultInvocationContext(metaHolder);
+        CacheInvocationContextFactory.createCacheResultInvocationContext(metaHolder);
         // then expected HystrixCachingException
     }
 
@@ -150,11 +144,6 @@ public class CacheInvocationContextFactoryTest {
     }
 
     private static boolean isAnnotationPresent(CacheInvocationParameter parameter, final Class<?> annotation) {
-        return Iterables.tryFind(parameter.getAnnotations(), new Predicate<Annotation>() {
-            @Override
-            public boolean apply(Annotation input) {
-                return input.annotationType().equals(annotation);
-            }
-        }).isPresent();
+        return Iterables.tryFind(parameter.getAnnotations(), input -> input.annotationType().equals(annotation)).isPresent();
     }
 }

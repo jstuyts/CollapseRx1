@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,11 +15,10 @@
  */
 package com.netflix.hystrix.strategy.properties;
 
-import static org.junit.Assert.assertEquals;
-
+import com.netflix.hystrix.strategy.properties.HystrixProperty.Factory;
 import org.junit.Test;
 
-import com.netflix.hystrix.strategy.properties.HystrixProperty.Factory;
+import static org.junit.Assert.assertEquals;
 
 public class HystrixPropertyTest {
 

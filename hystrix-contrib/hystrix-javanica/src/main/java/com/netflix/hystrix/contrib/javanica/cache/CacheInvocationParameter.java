@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.cache;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey;
@@ -101,12 +100,7 @@ public class CacheInvocationParameter {
     }
 
     private Annotation cacheKeyAnnotation() {
-        return Iterables.tryFind(annotations, new Predicate<Annotation>() {
-            @Override
-            public boolean apply(Annotation input) {
-                return input.annotationType().equals(CacheKey.class);
-            }
-        }).orNull();
+        return Iterables.tryFind(annotations, input -> input.annotationType().equals(CacheKey.class)).orNull();
     }
 
 }

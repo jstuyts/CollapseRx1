@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +15,10 @@
  */
 package com.netflix.hystrix.strategy;
 
+import com.netflix.hystrix.strategy.properties.HystrixDynamicProperties;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
-import com.netflix.hystrix.strategy.properties.HystrixDynamicProperties;
 
 /**
  * @ExcludeFromJavadoc
@@ -41,6 +41,7 @@ class HystrixArchaiusHelper {
                 Class<?> configManager = Class.forName(CONFIG_MANAGER_CLASS);
                 load = configManager.getMethod("loadCascadedPropertiesFromResources", String.class);
             } catch (Exception e) {
+                // No action needed. Continue without Archaius.
             }
     
             loadCascadedPropertiesFromResources = load;
@@ -58,9 +59,8 @@ class HystrixArchaiusHelper {
         if (isArchaiusV1Available()) {
             try {
                 LazyHolder.loadCascadedPropertiesFromResources.invoke(null, name);
-            } catch (IllegalAccessException e) {
-            } catch (IllegalArgumentException e) {
-            } catch (InvocationTargetException e) {
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                // No action needed. Ignore the properties from resources if a failure occurs during loading.
             }
         }
     }
@@ -75,11 +75,7 @@ class HystrixArchaiusHelper {
                 Class<?> defaultProperties = Class.forName(
                         "com.netflix.hystrix.strategy.properties.archaius" + ".HystrixDynamicPropertiesArchaius");
                 return (HystrixDynamicProperties) defaultProperties.newInstance();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            } catch (InstantiationException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalAccessException e) {
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
         }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,8 +21,6 @@ import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.util.Exceptions;
 import rx.Observable;
-import rx.functions.Action0;
-import rx.functions.Func0;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -41,7 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * 
  * @ThreadSafe
  */
-public abstract class HystrixCommand<R> extends AbstractCommand<R> implements HystrixExecutable<R>, HystrixInvokableInfo<R>, HystrixObservable<R> {
+public abstract class HystrixCommand<R> extends AbstractCommand<R> implements HystrixExecutable<R>, HystrixInvokableInfo, HystrixObservable<R> {
 
 
     /**
@@ -223,7 +221,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
 
     }
 
-	private final AtomicReference<Thread> executionThread = new AtomicReference<Thread>();
+	private final AtomicReference<Thread> executionThread = new AtomicReference<>();
 	private final AtomicBoolean interruptOnFutureCancel = new AtomicBoolean(false);
 
 	/**
@@ -237,21 +235,15 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
 
     @Override
     final protected Observable<R> getExecutionObservable() {
-        return Observable.defer(new Func0<Observable<R>>() {
-            @Override
-            public Observable<R> call() {
-                try {
-                    return Observable.just(run());
-                } catch (Throwable ex) {
-                    return Observable.error(ex);
-                }
+        return Observable.defer(() -> {
+            try {
+                return Observable.just(run());
+            } catch (Throwable ex) {
+                return Observable.error(ex);
             }
-        }).doOnSubscribe(new Action0() {
-            @Override
-            public void call() {
-                // Save thread on which we get subscribed so that we can interrupt it later if needed
-                executionThread.set(Thread.currentThread());
-            }
+        }).doOnSubscribe(() -> {
+            // Save thread on which we get subscribed so that we can interrupt it later if needed
+            executionThread.set(Thread.currentThread());
         });
     }
 

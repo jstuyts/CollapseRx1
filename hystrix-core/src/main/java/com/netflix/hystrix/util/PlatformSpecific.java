@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,17 +58,11 @@ public class PlatformSpecific {
                     .getMethod("getCurrentEnvironment")
                     .invoke(null) != null;
             return isInsideAppengine ? Platform.APPENGINE_STANDARD : Platform.STANDARD;
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
             // If ApiProxy doesn't exist, we're not on AppEngine at all.
-            return Platform.STANDARD;
-        } catch (InvocationTargetException e) {
-            // If ApiProxy throws an exception, we're not in a proper AppEngine environment.
-            return Platform.STANDARD;
-        } catch (IllegalAccessException e) {
-            // If the method isn't accessible, we're not on a supported version of AppEngine;
-            return Platform.STANDARD;
-        } catch (NoSuchMethodException e) {
-            // If the method doesn't exist, we're not on a supported version of AppEngine;
+            // Or if ApiProxy throws an exception, we're not in a proper AppEngine environment.
+            // Or if the method isn't accessible, we're not on a supported version of AppEngine;
+            // Or if the method doesn't exist, we're not on a supported version of AppEngine;
             return Platform.STANDARD;
         }
     }
@@ -78,14 +72,8 @@ public class PlatformSpecific {
             return (ThreadFactory) Class.forName("com.google.appengine.api.ThreadManager")
                     .getMethod("currentRequestThreadFactory")
                     .invoke(null);
-        } catch (IllegalAccessException e) {
+        } catch (IllegalAccessException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException e) {
             throw new RuntimeException("Couldn't invoke ThreadManager.currentRequestThreadFactory", e);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Couldn't invoke ThreadManager.currentRequestThreadFactory", e);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException("Couldn't invoke ThreadManager.currentRequestThreadFactory", e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e.getCause());
         }
     }
 }

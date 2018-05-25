@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,7 +43,7 @@ public final class MethodProvider {
         return INSTANCE;
     }
 
-    private Map<Method, Method> cache = new ConcurrentHashMap<Method, Method>();
+    private Map<Method, Method> cache = new ConcurrentHashMap<>();
 
 
     /**

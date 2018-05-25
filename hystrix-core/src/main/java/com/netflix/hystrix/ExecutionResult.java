@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -316,7 +316,7 @@ public class ExecutionResult {
     }
 
     public List<HystrixEventType> getOrderedList() {
-        List<HystrixEventType> eventList = new ArrayList<HystrixEventType>();
+        List<HystrixEventType> eventList = new ArrayList<>();
         for (HystrixEventType eventType: ALL_EVENT_TYPES) {
             if (eventCounts.contains(eventType)) {
                 eventList.add(eventType);

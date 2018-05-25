@@ -14,7 +14,7 @@ public abstract class BasicFallbackDefaultPropertiesTest extends BasicHystrixTes
     protected abstract Service createService();
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         service = createService();
     }
 

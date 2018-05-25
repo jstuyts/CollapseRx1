@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,6 @@ import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Scheduler;
-import rx.functions.Action0;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -73,7 +72,7 @@ public class HystrixThreadPoolTest {
     }
 
     @Test
-    public void ensureThreadPoolInstanceIsTheOneRegisteredWithMetricsPublisherAndThreadPoolCache() throws IllegalAccessException, NoSuchFieldException {
+    public void ensureThreadPoolInstanceIsTheOneRegisteredWithMetricsPublisherAndThreadPoolCache() {
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryConcurrencyTest");
         HystrixThreadPool poolOne = new HystrixThreadPool.HystrixThreadPoolDefault(
                 threadPoolKey, HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder());
@@ -101,19 +100,16 @@ public class HystrixThreadPoolTest {
         Scheduler.Worker w = hcs.createWorker();
 
         try {
-            w.schedule(new Action0() {
-                @Override
-                public void call() {
-                    start.countDown();
+            w.schedule(() -> {
+                start.countDown();
+                try {
                     try {
-                        try {
-                            Thread.sleep(5000);
-                        } catch (InterruptedException ex) {
-                            interrupted.set(true);
-                        }
-                    } finally {
-                        end.countDown();
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ex) {
+                        interrupted.set(true);
                     }
+                } finally {
+                    end.countDown();
                 }
             });
             

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -196,57 +196,27 @@ public final class MetaHolder {
     @SuppressWarnings("unchecked")
     public List<Class<? extends Throwable>> getCommandIgnoreExceptions() {
         if (!isCommandAnnotationPresent()) return Collections.emptyList();
-        return getOrDefault(new Supplier<List<Class<? extends Throwable>>>() {
-            @Override
-            public List<Class<? extends Throwable>> get() {
-                return ImmutableList.<Class<? extends Throwable>>copyOf(hystrixCommand.ignoreExceptions());
-            }
-        }, new Supplier<List<Class<? extends Throwable>>>() {
-            @Override
-            public List<Class<? extends Throwable>> get() {
-                return hasDefaultProperties()
-                        ? ImmutableList.<Class<? extends Throwable>>copyOf(defaultProperties.ignoreExceptions())
-                        : Collections.<Class<? extends Throwable>>emptyList();
-            }
-        }, this.<Class<? extends Throwable>>nonEmptyList());
+        return getOrDefault(() -> ImmutableList.copyOf(hystrixCommand.ignoreExceptions()), () -> hasDefaultProperties()
+                ? ImmutableList.copyOf(defaultProperties.ignoreExceptions())
+                : Collections.emptyList(), this.nonEmptyList());
     }
 
     public List<HystrixProperty> getCommandProperties() {
         if (!isCommandAnnotationPresent()) return Collections.emptyList();
-        return getOrDefault(new Supplier<List<HystrixProperty>>() {
-            @Override
-            public List<HystrixProperty> get() {
-                return ImmutableList.copyOf(hystrixCommand.commandProperties());
-            }
-        }, new Supplier<List<HystrixProperty>>() {
-            @Override
-            public List<HystrixProperty> get() {
-                return hasDefaultProperties()
-                        ? ImmutableList.copyOf(defaultProperties.commandProperties())
-                        : Collections.<HystrixProperty>emptyList();
-            }
-        }, this.<HystrixProperty>nonEmptyList());
+        return getOrDefault(() -> ImmutableList.copyOf(hystrixCommand.commandProperties()), () -> hasDefaultProperties()
+                ? ImmutableList.copyOf(defaultProperties.commandProperties())
+                : Collections.emptyList(), this.nonEmptyList());
     }
 
     public List<HystrixProperty> getCollapserProperties() {
-        return isCollapserAnnotationPresent() ? ImmutableList.copyOf(hystrixCollapser.collapserProperties()) : Collections.<HystrixProperty>emptyList();
+        return isCollapserAnnotationPresent() ? ImmutableList.copyOf(hystrixCollapser.collapserProperties()) : Collections.emptyList();
     }
 
     public List<HystrixProperty> getThreadPoolProperties() {
         if (!isCommandAnnotationPresent()) return Collections.emptyList();
-        return getOrDefault(new Supplier<List<HystrixProperty>>() {
-            @Override
-            public List<HystrixProperty> get() {
-                return ImmutableList.copyOf(hystrixCommand.threadPoolProperties());
-            }
-        }, new Supplier<List<HystrixProperty>>() {
-            @Override
-            public List<HystrixProperty> get() {
-                return hasDefaultProperties()
-                        ? ImmutableList.copyOf(defaultProperties.threadPoolProperties())
-                        : Collections.<HystrixProperty>emptyList();
-            }
-        }, this.<HystrixProperty>nonEmptyList());
+        return getOrDefault(() -> ImmutableList.copyOf(hystrixCommand.threadPoolProperties()), () -> hasDefaultProperties()
+                ? ImmutableList.copyOf(defaultProperties.threadPoolProperties())
+                : Collections.emptyList(), this.nonEmptyList());
     }
 
     public boolean isObservable() {
@@ -262,20 +232,9 @@ public final class MetaHolder {
     }
 
     public List<HystrixException> getRaiseHystrixExceptions() {
-        return getOrDefault(new Supplier<List<HystrixException>>() {
-            @Override
-            public List<HystrixException> get() {
-                return ImmutableList.copyOf(hystrixCommand.raiseHystrixExceptions());
-            }
-        }, new Supplier<List<HystrixException>>() {
-            @Override
-            public List<HystrixException> get() {
-                return hasDefaultProperties()
-                        ? ImmutableList.copyOf(defaultProperties.raiseHystrixExceptions())
-                        : Collections.<HystrixException>emptyList();
-
-            }
-        }, this.<HystrixException>nonEmptyList());
+        return getOrDefault(() -> ImmutableList.copyOf(hystrixCommand.raiseHystrixExceptions()), () -> hasDefaultProperties()
+                ? ImmutableList.copyOf(defaultProperties.raiseHystrixExceptions())
+                : Collections.emptyList(), this.nonEmptyList());
     }
 
     private String get(String key, String defaultKey) {
@@ -283,12 +242,7 @@ public final class MetaHolder {
     }
 
     private <T> Predicate<List<T>> nonEmptyList() {
-        return new Predicate<List<T>>() {
-            @Override
-            public boolean apply(@Nullable List<T> input) {
-                return input != null && !input.isEmpty();
-            }
-        };
+        return input -> input != null && !input.isEmpty();
     }
 
     @SuppressWarnings("unchecked")

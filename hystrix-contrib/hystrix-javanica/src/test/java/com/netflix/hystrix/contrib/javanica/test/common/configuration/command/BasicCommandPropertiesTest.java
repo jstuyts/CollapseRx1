@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,12 +35,12 @@ public abstract class BasicCommandPropertiesTest extends BasicHystrixTest {
     protected abstract UserService createUserService();
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         userService = createUserService();
     }
 
     @Test
-    public void testGetUser() throws NoSuchFieldException, IllegalAccessException {
+    public void testGetUser() {
         User u1 = userService.getUser("1", "name: ");
         assertEquals("name: 1", u1.getName());
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,14 +15,13 @@
  */
 package com.netflix.hystrix.strategy.properties;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-
+import com.netflix.config.PropertyWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.config.PropertyWrapper;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Chained property allowing a chain of defaults using Archaius (https://github.com/Netflix/archaius) properties which is used by the default properties implementations.
@@ -65,8 +64,8 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
          */
         public ChainLink() {
             next = null;
-            pReference = new AtomicReference<ChainLink<T>>(this);
-            callbacks = new ArrayList<Runnable>();
+            pReference = new AtomicReference<>(this);
+            callbacks = new ArrayList<>();
         }
 
         /**
@@ -74,8 +73,8 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
          */
         public ChainLink(ChainLink<T> nextProperty) {
             next = nextProperty;
-            pReference = new AtomicReference<ChainLink<T>>(next);
-            callbacks = new ArrayList<Runnable>();
+            pReference = new AtomicReference<>(next);
+            callbacks = new ArrayList<>();
         }
 
         protected void checkAndFlip() {
@@ -152,12 +151,9 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
             super(next); // setup next pointer
 
             sProp = sProperty;
-            sProp.addCallback(new Runnable() {
-                @Override
-                public void run() {
-                    logger.debug("Property changed: '{} = {}'", getName(), getValue());
-                    checkAndFlip();
-                }
+            sProp.addCallback(() -> {
+                logger.debug("Property changed: '{} = {}'", getName(), getValue());
+                checkAndFlip();
             });
             checkAndFlip();
         }
@@ -206,12 +202,9 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
             super(next); // setup next pointer
 
             sProp = sProperty;
-            sProp.addCallback(new Runnable() {
-                @Override
-                public void run() {
-                    logger.debug("Property changed: '{} = {}'", getName(), getValue());
-                    checkAndFlip();
-                }
+            sProp.addCallback(() -> {
+                logger.debug("Property changed: '{} = {}'", getName(), getValue());
+                checkAndFlip();
             });
             checkAndFlip();
         }
@@ -260,12 +253,9 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
             super(next); // setup next pointer
 
             sProp = sProperty;
-            sProp.addCallback(new Runnable() {
-                @Override
-                public void run() {
-                    logger.debug("Property changed: '{} = {}'", getName(), getValue());
-                    checkAndFlip();
-                }
+            sProp.addCallback(() -> {
+                logger.debug("Property changed: '{} = {}'", getName(), getValue());
+                checkAndFlip();
             });
             checkAndFlip();
         }

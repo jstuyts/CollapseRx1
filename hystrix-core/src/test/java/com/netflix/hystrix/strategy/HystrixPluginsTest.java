@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +15,6 @@
  */
 package com.netflix.hystrix.strategy;
 
-import com.netflix.hystrix.HystrixCommand;
-import com.netflix.hystrix.HystrixCommandGroupKey;
-import com.netflix.hystrix.strategy.HystrixPlugins.LoggerSupplier;
 import com.netflix.hystrix.strategy.properties.HystrixDynamicProperties;
 import com.netflix.hystrix.strategy.properties.HystrixDynamicPropertiesSystemProperties;
 import com.netflix.hystrix.strategy.properties.HystrixDynamicProperty;
@@ -32,7 +29,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static java.util.Arrays.asList;
@@ -46,7 +42,7 @@ public class HystrixPluginsTest {
         System.clearProperty("hystrix.plugin.HystrixDynamicProperties.implementation");
     }
     
-    private static ConcurrentLinkedQueue<String> dynamicPropertyEvents = new ConcurrentLinkedQueue<String>();
+    private static ConcurrentLinkedQueue<String> dynamicPropertyEvents = new ConcurrentLinkedQueue<>();
 
     
     @Test
@@ -78,7 +74,7 @@ public class HystrixPluginsTest {
     }
     
     static List<String> getEvents() {
-        return new ArrayList<String>(dynamicPropertyEvents);
+        return new ArrayList<>(dynamicPropertyEvents);
     }
     
     static void javaPrintList(Appendable a, Iterable<String> list) throws IOException {
@@ -99,7 +95,7 @@ public class HystrixPluginsTest {
     }
     
     @Test(expected=ServiceConfigurationError.class)
-    public void testDynamicPropertiesFailure() throws Exception {
+    public void testDynamicPropertiesFailure() {
         /*
          * James Bond: Do you expect me to talk?
          * Auric Goldfinger: No, Mr. Bond, I expect you to die!
@@ -140,7 +136,7 @@ public class HystrixPluginsTest {
     static String fakeServiceLoaderResource = 
             "FAKE_META_INF_SERVICES/com.netflix.hystrix.strategy.properties.HystrixDynamicProperties";
     
-    private HystrixPlugins setupMockServiceLoader() throws Exception {
+    private HystrixPlugins setupMockServiceLoader() {
         final ClassLoader realLoader = HystrixPlugins.class.getClassLoader();
         ClassLoader loader = new WrappedClassLoader(realLoader) {
 
@@ -149,7 +145,7 @@ public class HystrixPluginsTest {
                 dynamicPropertyEvents.add("serviceloader: " + name);
                 final Enumeration<URL> r;
                 if (name.endsWith("META-INF/services/com.netflix.hystrix.strategy.properties.HystrixDynamicProperties")) {
-                    Vector<URL> vs = new Vector<URL>();
+                    Vector<URL> vs = new Vector<>();
                     URL u = super.getResource(fakeServiceLoaderResource);
                     vs.add(u);
                     return vs.elements();
@@ -161,18 +157,13 @@ public class HystrixPluginsTest {
         };
         final Logger mockLogger = (Logger) 
                 Proxy.newProxyInstance(realLoader, new Class<?>[] {Logger.class}, new MockLoggerInvocationHandler());
-        return HystrixPlugins.create(loader, new LoggerSupplier() {
-            @Override
-            public Logger getLogger() {
-                return mockLogger;
-            }
-        });
+        return HystrixPlugins.create(loader, () -> mockLogger);
     }
     
     static class MockLoggerInvocationHandler implements InvocationHandler {
 
         @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        public Object invoke(Object proxy, Method method, Object[] args) {
             dynamicPropertyEvents.offer(method.getName() + ": " + asList(args));
             return null;
         }
@@ -244,65 +235,28 @@ public class HystrixPluginsTest {
         @Override
         public HystrixDynamicProperty<String> getString(String name, String fallback) {
             dynamicPropertyEvents.offer("property: " + name);
-            return new NoOpProperty<String>();
+            return new NoOpProperty<>();
         }
 
         @Override
         public HystrixDynamicProperty<Integer> getInteger(String name, Integer fallback) {
             dynamicPropertyEvents.offer("property: " + name);
-            return new NoOpProperty<Integer>();
+            return new NoOpProperty<>();
         }
 
         @Override
         public HystrixDynamicProperty<Long> getLong(String name, Long fallback) {
             dynamicPropertyEvents.offer("property: " + name);
-            return new NoOpProperty<Long>();
+            return new NoOpProperty<>();
 
         }
 
         @Override
         public HystrixDynamicProperty<Boolean> getBoolean(String name, Boolean fallback) {
             dynamicPropertyEvents.offer("property: " + name);
-            return new NoOpProperty<Boolean>();
+            return new NoOpProperty<>();
 
         }
         
-    }
-
-    private static class RequestIdCallable<T> implements Callable<T> {
-        private final Callable<T> callable;
-        private final String requestId;
-
-        public RequestIdCallable(Callable<T> callable) {
-            this.callable = callable;
-            this.requestId = testRequestIdThreadLocal.get();
-        }
-
-        @Override
-        public T call() throws Exception {
-            String original = testRequestIdThreadLocal.get();
-            testRequestIdThreadLocal.set(requestId);
-            try {
-                return callable.call();
-            } finally {
-                testRequestIdThreadLocal.set(original);
-            }
-        }
-    }
-    
-    private static final ThreadLocal<String> testRequestIdThreadLocal = new ThreadLocal<String>();
-
-    public static class DummyCommand extends HystrixCommand<Void> {
-
-        public DummyCommand() {
-            super(HystrixCommandGroupKey.Factory.asKey("Dummy"));
-        }
-
-        @Override
-        protected Void run() throws Exception {
-            System.out.println("requestId (run) = " + testRequestIdThreadLocal.get());
-            Thread.sleep(2000);
-            return null;
-        }
     }
 }

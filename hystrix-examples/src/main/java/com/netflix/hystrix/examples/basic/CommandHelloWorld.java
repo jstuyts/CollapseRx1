@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,18 +15,15 @@
  */
 package com.netflix.hystrix.examples.basic;
 
-import static org.junit.Assert.*;
+import com.netflix.hystrix.HystrixCommand;
+import com.netflix.hystrix.HystrixCommandGroupKey;
+import org.junit.Test;
+import rx.Observable;
+import rx.Observer;
 
 import java.util.concurrent.Future;
 
-import org.junit.Test;
-
-import rx.Observable;
-import rx.Observer;
-import rx.functions.Action1;
-
-import com.netflix.hystrix.HystrixCommand;
-import com.netflix.hystrix.HystrixCommandGroupKey;
+import static org.junit.Assert.assertEquals;
 
 /**
  * The obligatory "Hello World!" showing a simple implementation of a {@link HystrixCommand}.
@@ -70,7 +67,7 @@ public class CommandHelloWorld extends HystrixCommand<String> {
         }
 
         @Test
-        public void testObservable() throws Exception {
+        public void testObservable() {
 
             Observable<String> fWorld = new CommandHelloWorld("World").observe();
             Observable<String> fBob = new CommandHelloWorld("Bob").observe();
@@ -103,14 +100,7 @@ public class CommandHelloWorld extends HystrixCommand<String> {
             // non-blocking
             // - also verbose anonymous inner-class
             // - ignore errors and onCompleted signal
-            fBob.subscribe(new Action1<String>() {
-
-                @Override
-                public void call(String v) {
-                    System.out.println("onNext: " + v);
-                }
-
-            });
+            fBob.subscribe(v -> System.out.println("onNext: " + v));
 
             // non-blocking
             // - using closures in Java 8 would look like this:

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class HystrixCommandPropertiesTest {
 
@@ -95,11 +96,11 @@ public class HystrixCommandPropertiesTest {
     }
 
     @Test
-    public void testThreadPoolOnlyHasInstanceOverride() throws Exception {
+    public void testThreadPoolOnlyHasInstanceOverride() {
         HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter(), "unitTestPrefix");
         ConfigurationManager.getConfigInstance().setProperty("unitTestPrefix.command.default.threadPoolKeyOverride", 1234);
         // it should be null
-        assertEquals(null, properties.executionIsolationThreadPoolKeyOverride().get());
+        assertNull(properties.executionIsolationThreadPoolKeyOverride().get());
         ConfigurationManager.getConfigInstance().setProperty("unitTestPrefix.command.TEST.threadPoolKeyOverride", "testPool");
         // now it should have a value
         assertEquals("testPool", properties.executionIsolationThreadPoolKeyOverride().get());

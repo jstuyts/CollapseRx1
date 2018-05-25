@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,11 +15,9 @@
  */
 package com.netflix.hystrix.contrib.javanica.command.closure;
 
-import com.google.common.base.Throwables;
 import com.netflix.hystrix.contrib.javanica.command.ClosureCommand;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeaving;
@@ -45,10 +43,8 @@ public abstract class AbstractClosureFactory implements ClosureFactory {
                 closureObj = method.invoke(o, args); // creates instance of an anonymous class
             }
             return createClosure(method.getName(), closureObj);
-        } catch (InvocationTargetException e) {
-            throw Throwables.propagate(e.getCause());
         } catch (Exception e) {
-            throw Throwables.propagate(e);
+            throw new RuntimeException(e);
         }
     }
 

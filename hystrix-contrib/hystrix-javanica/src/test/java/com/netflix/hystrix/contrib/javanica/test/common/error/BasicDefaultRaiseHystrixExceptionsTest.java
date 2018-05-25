@@ -20,7 +20,7 @@ public abstract class BasicDefaultRaiseHystrixExceptionsTest {
     private Service service;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         service = createService();
     }
 
@@ -66,7 +66,7 @@ public abstract class BasicDefaultRaiseHystrixExceptionsTest {
 
     @Test
     public void testObservableRaiseHystrixRuntimeException() {
-        TestSubscriber<Void> testSubscriber = new TestSubscriber<Void>();
+        TestSubscriber<Void> testSubscriber = new TestSubscriber<>();
         service.observableCommandShouldRaiseHystrixRuntimeException().subscribe(testSubscriber);
         testSubscriber.assertError(HystrixRuntimeException.class);
     }

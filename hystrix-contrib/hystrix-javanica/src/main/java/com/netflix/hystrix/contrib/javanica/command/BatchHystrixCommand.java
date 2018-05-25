@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -57,7 +57,7 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
     }
 
     private List<Object> collect(Collection<HystrixCollapser.CollapsedRequest<Object, Object>> requests) {
-        List<Object> commandArgs = new ArrayList<Object>();
+        List<Object> commandArgs = new ArrayList<>();
         for (HystrixCollapser.CollapsedRequest<Object, Object> request : requests) {
             final Object[] args = (Object[]) request.getArgument();
             commandArgs.add(args[0]);

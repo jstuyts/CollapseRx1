@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +34,7 @@ public class HystrixTimerTest {
 
     @Before
     public void setUp() {
-        HystrixTimer timer = HystrixTimer.getInstance();
+        HystrixTimer.getInstance();
         HystrixTimer.reset();
         HystrixPlugins.reset();
     }
@@ -47,10 +47,10 @@ public class HystrixTimerTest {
     @Test
     public void testSingleCommandSingleInterval() {
         HystrixTimer timer = HystrixTimer.getInstance();
-        TestListener l1 = new TestListener(50, "A");
+        TestListener l1 = new TestListener(50);
         timer.addTimerListener(l1);
 
-        TestListener l2 = new TestListener(50, "B");
+        TestListener l2 = new TestListener(50);
         timer.addTimerListener(l2);
 
         try {
@@ -69,13 +69,13 @@ public class HystrixTimerTest {
     @Test
     public void testSingleCommandMultipleIntervals() {
         HystrixTimer timer = HystrixTimer.getInstance();
-        TestListener l1 = new TestListener(100, "A");
+        TestListener l1 = new TestListener(100);
         timer.addTimerListener(l1);
 
-        TestListener l2 = new TestListener(10, "B");
+        TestListener l2 = new TestListener(10);
         timer.addTimerListener(l2);
 
-        TestListener l3 = new TestListener(25, "C");
+        TestListener l3 = new TestListener(25);
         timer.addTimerListener(l3);
 
         try {
@@ -104,10 +104,10 @@ public class HystrixTimerTest {
     @Test
     public void testSingleCommandRemoveListener() {
         HystrixTimer timer = HystrixTimer.getInstance();
-        TestListener l1 = new TestListener(50, "A");
+        TestListener l1 = new TestListener(50);
         timer.addTimerListener(l1);
 
-        TestListener l2 = new TestListener(50, "B");
+        TestListener l2 = new TestListener(50);
         Reference<TimerListener> l2ref = timer.addTimerListener(l2);
 
         try {
@@ -149,7 +149,7 @@ public class HystrixTimerTest {
     @Test
     public void testReset() {
         HystrixTimer timer = HystrixTimer.getInstance();
-        TestListener l1 = new TestListener(50, "A");
+        TestListener l1 = new TestListener(50);
         timer.addTimerListener(l1);
 
         ScheduledExecutor ex = timer.executor.get();
@@ -163,7 +163,7 @@ public class HystrixTimerTest {
         assertNull(timer.executor.get());
 
         // assert it starts up again on use
-        TestListener l2 = new TestListener(50, "A");
+        TestListener l2 = new TestListener(50);
         timer.addTimerListener(l2);
 
         ScheduledExecutor ex2 = timer.executor.get();
@@ -212,7 +212,7 @@ public class HystrixTimerTest {
         private final int interval;
         AtomicInteger tickCount = new AtomicInteger();
 
-        TestListener(int interval, String value) {
+        TestListener(int interval) {
             this.interval = interval;
         }
 

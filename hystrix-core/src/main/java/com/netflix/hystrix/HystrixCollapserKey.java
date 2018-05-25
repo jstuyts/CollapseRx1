@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,15 +29,15 @@ public interface HystrixCollapserKey {
      * 
      * @return String
      */
-    public String name();
+    String name();
 
-    public static class Factory {
+    class Factory {
 
         private Factory() {
         }
 
         // used to intern instances so we don't keep re-creating them millions of times for the same key
-        private static ConcurrentHashMap<String, HystrixCollapserKey> intern = new ConcurrentHashMap<String, HystrixCollapserKey>();
+        private static ConcurrentHashMap<String, HystrixCollapserKey> intern = new ConcurrentHashMap<>();
 
         /**
          * Retrieve (or create) an interned HystrixCollapserKey instance for a given name.

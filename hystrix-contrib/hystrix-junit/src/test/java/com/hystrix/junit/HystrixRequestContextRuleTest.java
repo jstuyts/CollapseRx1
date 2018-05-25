@@ -10,7 +10,7 @@ public final class HystrixRequestContextRuleTest {
     public HystrixRequestContextRule request = new HystrixRequestContextRule();
 
     @Test
-    public void initsContext() {
+    public void initializesContext() {
         MatcherAssert.assertThat(this.request.context(), CoreMatchers.notNullValue());
     }
 

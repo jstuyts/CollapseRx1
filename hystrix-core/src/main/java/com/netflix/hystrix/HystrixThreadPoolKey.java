@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,13 +29,7 @@ public interface HystrixThreadPoolKey extends HystrixKey {
 
         // used to intern instances so we don't keep re-creating them millions of times for the same key
         private static final InternMap<String, HystrixThreadPoolKey> intern
-                = new InternMap<String, HystrixThreadPoolKey>(
-                new InternMap.ValueConstructor<String, HystrixThreadPoolKey>() {
-                    @Override
-                    public HystrixThreadPoolKey create(String key) {
-                        return new HystrixThreadPoolKeyDefault(key);
-                    }
-                });
+                = new InternMap<>(HystrixThreadPoolKeyDefault::new);
 
         /**
          * Retrieve (or create) an interned HystrixThreadPoolKey instance for a given name.

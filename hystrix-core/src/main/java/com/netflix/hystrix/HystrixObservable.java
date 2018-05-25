@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,7 @@ import com.netflix.hystrix.exception.HystrixRuntimeException;
  * 
  * @param <R>
  */
-public interface HystrixObservable<R> extends HystrixInvokable<R> {
+public interface HystrixObservable<R> extends HystrixInvokable {
 
     /**
      * Used for asynchronous execution of command with a callback by subscribing to the {@link Observable}.
@@ -56,7 +56,7 @@ public interface HystrixObservable<R> extends HystrixInvokable<R> {
      * @throws IllegalStateException
      *             if invoked more than once
      */
-    public Observable<R> observe();
+    Observable<R> observe();
 
     /**
      * Used for asynchronous execution of command with a callback by subscribing to the {@link Observable}.
@@ -85,6 +85,6 @@ public interface HystrixObservable<R> extends HystrixInvokable<R> {
      * @throws IllegalStateException
      *             if invoked more than once
      */
-    public Observable<R> toObservable();
+    Observable<R> toObservable();
     
 }

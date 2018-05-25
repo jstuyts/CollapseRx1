@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +15,7 @@
  */
 package com.netflix.hystrix.contrib.javanica.cache;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.command.MethodExecutionAction;
 
@@ -25,6 +23,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Runtime information about an intercepted method invocation for a method
@@ -70,12 +69,7 @@ public class CacheInvocationContext<A extends Annotation> {
             }
             parameters = parametersBuilder.build();
             // get key parameters
-            Iterable<CacheInvocationParameter> filtered = Iterables.filter(parameters, new Predicate<CacheInvocationParameter>() {
-                @Override
-                public boolean apply(CacheInvocationParameter input) {
-                    return input.hasCacheKeyAnnotation();
-                }
-            });
+            Iterable<CacheInvocationParameter> filtered = parameters.stream().filter(CacheInvocationParameter::hasCacheKeyAnnotation).collect(Collectors.toList());
             if (filtered.iterator().hasNext()) {
                 keyParameters = ImmutableList.<CacheInvocationParameter>builder().addAll(filtered).build();
             } else {

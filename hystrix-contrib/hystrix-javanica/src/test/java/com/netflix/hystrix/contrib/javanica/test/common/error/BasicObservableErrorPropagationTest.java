@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,6 +28,7 @@ import rx.observers.TestSubscriber;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -41,7 +42,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
     private static final Map<String, User> USERS;
 
     static {
-        USERS = new HashMap<String, User>();
+        USERS = new HashMap<>();
         USERS.put("1", new User("1", "user_1"));
         USERS.put("2", new User("2", "user_2"));
         USERS.put("3", new User("3", "user_3"));
@@ -55,16 +56,16 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
     protected abstract UserService createUserService();
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         MockitoAnnotations.initMocks(this);
         userService = createUserService();
         userService.setFailoverService(failoverService);
     }
 
     @Test
-    public void testGetUserByBadId() throws NotFoundException {
+    public void testGetUserByBadId() {
         try {
-            TestSubscriber<User> testSubscriber = new TestSubscriber<User>();
+            TestSubscriber<User> testSubscriber = new TestSubscriber<>();
 
             String badId = "";
             userService.getUserById(badId).subscribe(testSubscriber);
@@ -76,9 +77,9 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
     }
 
     @Test
-    public void testGetNonExistentUser() throws NotFoundException {
+    public void testGetNonExistentUser() {
         try {
-            TestSubscriber<User> testSubscriber = new TestSubscriber<User>();
+            TestSubscriber<User> testSubscriber = new TestSubscriber<>();
 
             userService.getUserById("4").subscribe(testSubscriber); // user with id 4 doesn't exist
 
@@ -89,7 +90,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
     }
 
     @Test
-    public void testActivateUser() throws NotFoundException, ActivationException {
+    public void testActivateUser() {
         try {
             userService.activateUser("1").toBlocking().single(); // this method always throws ActivationException
         } finally {
@@ -98,22 +99,19 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
     }
 
     @Test
-    public void testBlockUser() throws NotFoundException, ActivationException, OperationException {
-        try {
-            TestSubscriber<Void> testSubscriber = new TestSubscriber<Void>();
+    public void testBlockUser() {
+        TestSubscriber<Void> testSubscriber = new TestSubscriber<>();
 
-            userService.blockUser("1").subscribe(testSubscriber); // this method always throws ActivationException
+        userService.blockUser("1").subscribe(testSubscriber); // this method always throws ActivationException
 
-            testSubscriber.assertError(Throwable.class);
-            assertTrue(testSubscriber.getOnErrorEvents().size() == 1);
-            assertTrue(testSubscriber.getOnErrorEvents().get(0).getCause() instanceof OperationException);
-        } finally {
-        }
+        testSubscriber.assertError(Throwable.class);
+        assertEquals(1, testSubscriber.getOnErrorEvents().size());
+        assertTrue(testSubscriber.getOnErrorEvents().get(0).getCause() instanceof OperationException);
     }
 
     @Test
-    public void testPropagateCauseException() throws NotFoundException {
-        TestSubscriber<Void> testSubscriber = new TestSubscriber<Void>();
+    public void testPropagateCauseException() {
+        TestSubscriber<Void> testSubscriber = new TestSubscriber<>();
 
         userService.deleteUser("").subscribe(testSubscriber);
 
@@ -122,14 +120,11 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
 
     public static class UserService {
 
-        private FailoverService failoverService;
-
         public void setFailoverService(FailoverService failoverService) {
-            this.failoverService = failoverService;
         }
 
         @HystrixCommand
-        public Observable<Void> deleteUser(String id) throws NotFoundException {
+        public Observable<Void> deleteUser(String id) {
             return Observable.error(new NotFoundException(""));
         }
 
@@ -139,7 +134,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
                         BadRequestException.class,
                         NotFoundException.class
                 })
-        public Observable<User> getUserById(String id) throws NotFoundException {
+        public Observable<User> getUserById(String id) {
             validate(id);
             if (!USERS.containsKey(id)) {
                 return Observable.error(new NotFoundException("user with id: " + id + " not found"));
@@ -150,7 +145,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
 
         @HystrixCommand(
                 ignoreExceptions = {BadRequestException.class, NotFoundException.class})
-        public Observable<Void> activateUser(String id) throws NotFoundException, ActivationException {
+        public Observable<Void> activateUser(String id) {
             validate(id);
             if (!USERS.containsKey(id)) {
                 return Observable.error(new NotFoundException("user with id: " + id + " not found"));
@@ -161,7 +156,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
 
         @HystrixCommand(
                 ignoreExceptions = {BadRequestException.class, NotFoundException.class})
-        public Observable<Void> blockUser(String id) throws NotFoundException, OperationException {
+        public Observable<Void> blockUser(String id) {
             validate(id);
             if (!USERS.containsKey(id)) {
                 return Observable.error(new NotFoundException("user with id: " + id + " not found"));
@@ -208,12 +203,6 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
 
     private static class OperationException extends Throwable {
         private OperationException(String message) {
-            super(message);
-        }
-    }
-
-    private static class RuntimeOperationException extends RuntimeException {
-        private RuntimeOperationException(String message) {
             super(message);
         }
     }

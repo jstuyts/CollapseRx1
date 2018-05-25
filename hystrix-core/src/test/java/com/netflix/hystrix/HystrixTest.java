@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,13 +15,11 @@
  */
 package com.netflix.hystrix;
 
-import org.junit.Before;
-
 import com.netflix.hystrix.HystrixCommand.Setter;
+import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Func0;
 import rx.schedulers.Schedulers;
 
 import java.util.ArrayList;
@@ -220,7 +218,7 @@ public class HystrixTest {
     }
 
     @Test
-    public void testInsideHystrixSemaphoreObserve() throws Exception {
+    public void testInsideHystrixSemaphoreObserve() {
 
         HystrixCommand<Boolean> command = new HystrixCommand<Boolean>(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestUtil"))
                 .andCommandKey(HystrixCommandKey.Factory.asKey("SemaphoreIsolatedCommandName"))
@@ -370,14 +368,9 @@ public class HystrixTest {
     @Test
     public void testMultipleSemaphoreObservableCommandsInFlight() throws InterruptedException {
         int NUM_COMMANDS = 50;
-        List<Observable<Integer>> commands = new ArrayList<Observable<Integer>>();
+        List<Observable<Integer>> commands = new ArrayList<>();
         for (int i = 0; i < NUM_COMMANDS; i++) {
-            commands.add(Observable.defer(new Func0<Observable<Integer>>() {
-                @Override
-                public Observable<Integer> call() {
-                    return new AsynchronousObservableCommand().observe();
-                }
-            }));
+            commands.add(Observable.defer(() -> new AsynchronousObservableCommand().observe()));
         }
 
         final AtomicBoolean exceptionFound = new AtomicBoolean(false);
@@ -413,13 +406,13 @@ public class HystrixTest {
     //see https://github.com/Netflix/Hystrix/issues/280
     @Test
     public void testResetCommandProperties() {
-        HystrixCommand<Boolean> cmd1 = new ResettableCommand(100, 1);
+        HystrixCommand<Boolean> cmd1 = new ResettableCommand(1, 10);
         assertEquals(1L, (long) cmd1.getProperties().executionIsolationSemaphoreMaxConcurrentRequests().get());
         //assertEquals(10L, (long) cmd1.threadPool.getExecutor()..getCorePoolSize());
 
         Hystrix.reset();
 
-        HystrixCommand<Boolean> cmd2 = new ResettableCommand(700, 2);
+        HystrixCommand<Boolean> cmd2 = new ResettableCommand(2, 40);
         assertEquals(2L, (long) cmd2.getProperties().executionIsolationSemaphoreMaxConcurrentRequests().get());
         //assertEquals(40L, (long) cmd2.threadPool.getExecutor().getCorePoolSize());
 	}
@@ -435,24 +428,21 @@ public class HystrixTest {
 
         @Override
         protected Observable<Integer> construct() {
-            return Observable.create(new Observable.OnSubscribe<Integer>() {
-                @Override
-                public void call(Subscriber<? super Integer> subscriber) {
-                    try {
-                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " SyncCommand construct()");
-                        assertEquals("SyncObservable", Hystrix.getCurrentThreadExecutingCommand().name());
-                        assertEquals(1, Hystrix.getCommandCount());
-                        Thread.sleep(10);
-                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " SyncCommand construct() -> OnNext(1)");
-                        subscriber.onNext(1);
-                        Thread.sleep(10);
-                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " SyncCommand construct() -> OnNext(2)");
-                        subscriber.onNext(2);
-                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " SyncCommand construct() -> OnCompleted");
-                        subscriber.onCompleted();
-                    } catch (Throwable ex) {
-                        subscriber.onError(ex);
-                    }
+            return Observable.create(subscriber -> {
+                try {
+                    System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " SyncCommand construct()");
+                    assertEquals("SyncObservable", Hystrix.getCurrentThreadExecutingCommand().name());
+                    assertEquals(1, Hystrix.getCommandCount());
+                    Thread.sleep(10);
+                    System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " SyncCommand construct() -> OnNext(1)");
+                    subscriber.onNext(1);
+                    Thread.sleep(10);
+                    System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " SyncCommand construct() -> OnNext(2)");
+                    subscriber.onNext(2);
+                    System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " SyncCommand construct() -> OnCompleted");
+                    subscriber.onCompleted();
+                } catch (Throwable ex) {
+                    subscriber.onError(ex);
                 }
             });
         }
@@ -469,22 +459,19 @@ public class HystrixTest {
 
         @Override
         protected Observable<Integer> construct() {
-            return Observable.create(new Observable.OnSubscribe<Integer>() {
-                @Override
-                public void call(Subscriber<? super Integer> subscriber) {
-                    try {
-                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " AsyncCommand construct()");
-                        Thread.sleep(10);
-                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " AsyncCommand construct() -> OnNext(1)");
-                        subscriber.onNext(1);
-                        Thread.sleep(10);
-                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " AsyncCommand construct() -> OnNext(2)");
-                        subscriber.onNext(2);
-                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " AsyncCommand construct() -> OnCompleted");
-                        subscriber.onCompleted();
-                    } catch (Throwable ex) {
-                        subscriber.onError(ex);
-                    }
+            return Observable.create((Observable.OnSubscribe<Integer>) subscriber -> {
+                try {
+                    System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " AsyncCommand construct()");
+                    Thread.sleep(10);
+                    System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " AsyncCommand construct() -> OnNext(1)");
+                    subscriber.onNext(1);
+                    Thread.sleep(10);
+                    System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " AsyncCommand construct() -> OnNext(2)");
+                    subscriber.onNext(2);
+                    System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " AsyncCommand construct() -> OnCompleted");
+                    subscriber.onCompleted();
+                } catch (Throwable ex) {
+                    subscriber.onError(ex);
                 }
             }).subscribeOn(Schedulers.computation());
         }
@@ -499,7 +486,7 @@ public class HystrixTest {
         }
 
         @Override
-        protected Boolean run() throws Exception {
+        protected Boolean run() {
             return true;
         }
     }

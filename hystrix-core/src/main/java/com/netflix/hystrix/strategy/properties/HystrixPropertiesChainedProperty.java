@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,15 +15,14 @@
  */
 package com.netflix.hystrix.strategy.properties;
 
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.netflix.hystrix.strategy.HystrixPlugins;
 
 /**
  * Chained property allowing a chain of defaults properties which is uses the properties plugin.
@@ -66,8 +65,8 @@ public abstract class HystrixPropertiesChainedProperty {
          */
         public ChainLink() {
             next = null;
-            pReference = new AtomicReference<ChainLink<T>>(this);
-            callbacks = new ArrayList<Runnable>();
+            pReference = new AtomicReference<>(this);
+            callbacks = new ArrayList<>();
         }
 
         /**
@@ -75,8 +74,8 @@ public abstract class HystrixPropertiesChainedProperty {
          */
         public ChainLink(ChainLink<T> nextProperty) {
             next = nextProperty;
-            pReference = new AtomicReference<ChainLink<T>>(next);
-            callbacks = new ArrayList<Runnable>();
+            pReference = new AtomicReference<>(next);
+            callbacks = new ArrayList<>();
         }
 
         protected void checkAndFlip() {
@@ -131,8 +130,8 @@ public abstract class HystrixPropertiesChainedProperty {
             super();        
         }
         
-        private List<HystrixDynamicProperty<T>> properties = 
-                new ArrayList<HystrixDynamicProperty<T>>();
+        private List<HystrixDynamicProperty<T>> properties =
+                new ArrayList<>();
         
         
         public ChainBuilder<T> add(HystrixDynamicProperty<T> property) {
@@ -148,20 +147,20 @@ public abstract class HystrixPropertiesChainedProperty {
         public HystrixDynamicProperty<T> build() {
             if (properties.size() < 1) throw new IllegalArgumentException();
             if (properties.size() == 1) return properties.get(0);
-            List<HystrixDynamicProperty<T>> reversed = 
-                    new ArrayList<HystrixDynamicProperty<T>>(properties);
+            List<HystrixDynamicProperty<T>> reversed =
+                    new ArrayList<>(properties);
             Collections.reverse(reversed);
             ChainProperty<T> current = null;
             for (HystrixDynamicProperty<T> p : reversed) {
                 if (current == null) {
-                    current = new ChainProperty<T>(p);
+                    current = new ChainProperty<>(p);
                 }
                 else {
-                    current = new ChainProperty<T>(p, current);
+                    current = new ChainProperty<>(p, current);
                 }
             }
             
-            return new ChainHystrixProperty<T>(current);
+            return new ChainHystrixProperty<>(current);
             
         }
         
@@ -230,12 +229,9 @@ public abstract class HystrixPropertiesChainedProperty {
             super(next); // setup next pointer
 
             sProp = sProperty;
-            sProp.addCallback(new Runnable() {
-                @Override
-                public void run() {
-                    logger.debug("Property changed: '{} = {}'", getName(), getValue());
-                    checkAndFlip();
-                }
+            sProp.addCallback(() -> {
+                logger.debug("Property changed: '{} = {}'", getName(), getValue());
+                checkAndFlip();
             });
             checkAndFlip();
         }
@@ -260,9 +256,7 @@ public abstract class HystrixPropertiesChainedProperty {
     private static <T> HystrixDynamicProperty<T> 
         getDynamicProperty(String propName, T defaultValue, Class<T> type) {
         HystrixDynamicProperties properties = HystrixPlugins.getInstance().getDynamicProperties();
-        HystrixDynamicProperty<T> p = 
-                HystrixDynamicProperties.Util.getProperty(properties, propName, defaultValue, type);
-        return p;
+        return HystrixDynamicProperties.Util.getProperty(properties, propName, defaultValue, type);
     }
 
 }

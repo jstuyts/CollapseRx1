@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,16 +15,14 @@
  */
 package com.netflix.hystrix.examples.basic;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import rx.Observable;
-import rx.functions.Func1;
-
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.hystrix.examples.basic.ObservableCommandNumbersToWords.NumberWord;
+import rx.Observable;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A simple Hystrix Observable command that translates a number (<code>Integer</code>) into an English text.
@@ -34,7 +32,7 @@ class ObservableCommandNumbersToWords extends HystrixObservableCommand<NumberWor
 	private final List<Integer> numbers;
 
 	// in the real world you'd probably want to replace this very simple code by using ICU or similar
-	static Map<Integer, String> dict = new HashMap<Integer, String>(11);
+	static Map<Integer, String> dict = new HashMap<>(11);
 	static
 	{
 		dict.put(0, "zero");
@@ -59,15 +57,7 @@ class ObservableCommandNumbersToWords extends HystrixObservableCommand<NumberWor
 	@Override
 	protected Observable<NumberWord> construct()
 	{
-		return Observable.from(numbers).map(new Func1<Integer, NumberWord>()
-		{
-			@Override
-			public NumberWord call(final Integer number)
-			{
-				return new NumberWord(number, dict.get(number));
-			}
-
-		});
+		return Observable.from(numbers).map(number -> new NumberWord(number, dict.get(number)));
 	}
 
 	static class NumberWord

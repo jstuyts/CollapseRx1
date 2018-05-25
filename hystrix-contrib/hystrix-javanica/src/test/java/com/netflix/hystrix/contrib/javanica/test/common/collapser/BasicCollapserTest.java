@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by dmgcodevil
@@ -45,7 +46,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
     private UserService userService;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         userService = createUserService();
 
     }
@@ -67,7 +68,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
     }
 
     @Test
-    public void testReactive() throws Exception {
+    public void testReactive() {
 
         final Observable<User> u1 = userService.getUserByIdReactive("1");
         final Observable<User> u2 = userService.getUserByIdReactive("2");
@@ -79,9 +80,9 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
 
         Set<String> expectedIds = Sets.newHashSet("1", "2", "3", "4", "5");
         for (User cUser : users) {
-            assertEquals(expectedIds.remove(cUser.getId()), true);
+            assertTrue(expectedIds.remove(cUser.getId()));
         }
-        assertEquals(expectedIds.isEmpty(), true);
+        assertTrue(expectedIds.isEmpty());
     }
 
     @Test
@@ -142,7 +143,6 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
     public static class UserService {
 
         public static final Logger log = LoggerFactory.getLogger(UserService.class);
-        public static final User DEFAULT_USER = new User("def", "def");
 
 
         @HystrixCollapser(batchMethod = "getUserByIds",
@@ -179,7 +179,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
             if (e.getMessage().equals("getUserByIdsFails failed")) {
                 throw new RuntimeException("getUserByIdsWithThrowableParam1 failed");
             }
-            List<User> users = new ArrayList<User>();
+            List<User> users = new ArrayList<>();
             for (String id : ids) {
                 users.add(new User(id, "name: " + id));
             }
@@ -196,7 +196,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
             if (!e.getMessage().equals("getUserByIdsWithThrowableParam2 failed")) {
                 throw new RuntimeException("getUserByIdsWithThrowableParam3 failed");
             }
-            List<User> users = new ArrayList<User>();
+            List<User> users = new ArrayList<>();
             for (String id : ids) {
                 users.add(new User(id, "name: " + id));
             }
@@ -205,7 +205,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
 
         @HystrixCommand
         public List<User> getUserByIds(List<String> ids) {
-            List<User> users = new ArrayList<User>();
+            List<User> users = new ArrayList<>();
             for (String id : ids) {
                 users.add(new User(id, "name: " + id));
             }

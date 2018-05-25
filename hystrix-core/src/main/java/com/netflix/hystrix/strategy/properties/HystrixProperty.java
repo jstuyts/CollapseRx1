@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,78 +28,43 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedArchaiusP
  */
 public interface HystrixProperty<T> {
 
-    public T get();
+    T get();
 
     /**
      * Helper methods for wrapping static values and dynamic Archaius (https://github.com/Netflix/archaius) properties in the {@link HystrixProperty} interface.
      */
-    public static class Factory {
+    class Factory {
 
         public static <T> HystrixProperty<T> asProperty(final T value) {
-            return new HystrixProperty<T>() {
-
-                @Override
-                public T get() {
-                    return value;
-                }
-
-            };
+            return () -> value;
         }
 
         /**
          * @ExcludeFromJavadoc
          */
         public static HystrixProperty<Integer> asProperty(final DynamicIntegerProperty value) {
-            return new HystrixProperty<Integer>() {
-
-                @Override
-                public Integer get() {
-                    return value.get();
-                }
-
-            };
+            return value::get;
         }
 
         /**
          * @ExcludeFromJavadoc
          */
         public static HystrixProperty<Long> asProperty(final DynamicLongProperty value) {
-            return new HystrixProperty<Long>() {
-
-                @Override
-                public Long get() {
-                    return value.get();
-                }
-
-            };
+            return value::get;
         }
 
         /**
          * @ExcludeFromJavadoc
          */
         public static HystrixProperty<String> asProperty(final DynamicStringProperty value) {
-            return new HystrixProperty<String>() {
-
-                @Override
-                public String get() {
-                    return value.get();
-                }
-
-            };
+            return value::get;
         }
 
         /**
          * @ExcludeFromJavadoc
          */
         public static HystrixProperty<Boolean> asProperty(final DynamicBooleanProperty value) {
-            return new HystrixProperty<Boolean>() {
-
-                @Override
-                public Boolean get() {
-                    return value.get();
-                }
-
-            };
+            return value::get;
         }
 
         /**
@@ -112,18 +77,13 @@ public interface HystrixProperty<T> {
          * @return value or defaultValue if value returns null
          */
         public static <T> HystrixProperty<T> asProperty(final HystrixProperty<T> value, final T defaultValue) {
-            return new HystrixProperty<T>() {
-
-                @Override
-                public T get() {
-                    T v = value.get();
-                    if (v == null) {
-                        return defaultValue;
-                    } else {
-                        return v;
-                    }
+            return () -> {
+                T v = value.get();
+                if (v == null) {
+                    return defaultValue;
+                } else {
+                    return v;
                 }
-
             };
         }
 
@@ -133,20 +93,16 @@ public interface HystrixProperty<T> {
          * @param values properties to iterate over
          * @return first non-null value or null if none found
          */
+        @SafeVarargs
         public static <T> HystrixProperty<T> asProperty(final HystrixProperty<T>... values) {
-            return new HystrixProperty<T>() {
-
-                @Override
-                public T get() {
-                    for (HystrixProperty<T> v : values) {
-                        // return the first one that doesn't return null
-                        if (v.get() != null) {
-                            return v.get();
-                        }
+            return () -> {
+                for (HystrixProperty<T> v : values) {
+                    // return the first one that doesn't return null
+                    if (v.get() != null) {
+                        return v.get();
                     }
-                    return null;
                 }
-
+                return null;
             };
         }
 
@@ -154,25 +110,11 @@ public interface HystrixProperty<T> {
          * @ExcludeFromJavadoc
          */
         public static <T> HystrixProperty<T> asProperty(final HystrixPropertiesChainedArchaiusProperty.ChainLink<T> chainedProperty) {
-            return new HystrixProperty<T>() {
-
-                @Override
-                public T get() {
-                    return chainedProperty.get();
-                }
-
-            };
+            return chainedProperty::get;
         }
 
         public static <T> HystrixProperty<T> nullProperty() {
-            return new HystrixProperty<T>() {
-
-                @Override
-                public T get() {
-                    return null;
-                }
-
-            };
+            return () -> null;
         }
 
     }

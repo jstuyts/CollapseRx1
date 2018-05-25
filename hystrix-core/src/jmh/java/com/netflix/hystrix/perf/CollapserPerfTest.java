@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.Blackhole;
 import rx.Observable;
-import rx.Subscription;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -76,7 +75,7 @@ public class CollapserPerfTest {
         public void setUp() {
             reqContext = HystrixRequestContext.initializeContext();
 
-            List<Observable<String>> os = new ArrayList<Observable<String>>();
+            List<Observable<String>> os = new ArrayList<>();
 
             for (int i = 0; i < numToCollapse; i++) {
                 IdentityCollapser collapser = new IdentityCollapser(i, blackholeConsumption);
@@ -111,7 +110,7 @@ public class CollapserPerfTest {
 
         @Override
         protected HystrixCommand<List<String>> createCommand(Collection<CollapsedRequest<String, String>> collapsedRequests) {
-            List<String> args = new ArrayList<String>();
+            List<String> args = new ArrayList<>();
             for (CollapsedRequest<String, String> collapsedReq: collapsedRequests) {
                 args.add(collapsedReq.getArgument());
             }
@@ -145,9 +144,9 @@ public class CollapserPerfTest {
         }
 
         @Override
-        protected List<String> run() throws Exception {
+        protected List<String> run() {
             Blackhole.consumeCPU(blackholeConsumption);
-            List<String> toReturn = new ArrayList<String>();
+            List<String> toReturn = new ArrayList<>();
             for (String inputArg: inputArgs) {
                 toReturn.add(inputArg + ":1");
             }

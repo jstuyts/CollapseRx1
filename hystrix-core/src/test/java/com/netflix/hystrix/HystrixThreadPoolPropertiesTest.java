@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,7 +33,7 @@ public class HystrixThreadPoolPropertiesTest {
                 .withMaximumSize(15) //maximum size of thread pool
                 .withKeepAliveTimeMinutes(1)// minutes to keep a thread alive (though in practice this doesn't get used as by default we set a fixed size)
                 .withMaxQueueSize(100)// size of queue (but we never allow it to grow this big ... this can't be dynamically changed so we use 'queueSizeRejectionThreshold' to artificially limit and reject)
-                .withQueueSizeRejectionThreshold(10);// number of items in queue at which point we reject (this can be dyamically changed)
+                .withQueueSizeRejectionThreshold(10);// number of items in queue at which point we reject (this can be dynamically changed)
     }
 
     /**
@@ -75,7 +75,7 @@ public class HystrixThreadPoolPropertiesTest {
 
     }
 
-    private static enum TestThreadPoolKey implements HystrixThreadPoolKey {
+    private enum TestThreadPoolKey implements HystrixThreadPoolKey {
         TEST
     }
 

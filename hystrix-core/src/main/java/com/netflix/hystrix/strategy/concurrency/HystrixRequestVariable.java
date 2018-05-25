@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,6 +36,6 @@ public interface HystrixRequestVariable<T> extends HystrixRequestVariableLifecyc
      * 
      * @return T value of variable for current request scope.
      */
-    public T get();
+    T get();
 
 }

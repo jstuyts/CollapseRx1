@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,13 +31,7 @@ public interface HystrixCommandGroupKey extends HystrixKey {
 
         // used to intern instances so we don't keep re-creating them millions of times for the same key
         private static final InternMap<String, HystrixCommandGroupDefault> intern
-                = new InternMap<String, HystrixCommandGroupDefault>(
-                new InternMap.ValueConstructor<String, HystrixCommandGroupDefault>() {
-                    @Override
-                    public HystrixCommandGroupDefault create(String key) {
-                        return new HystrixCommandGroupDefault(key);
-                    }
-                });
+                = new InternMap<>(HystrixCommandGroupDefault::new);
 
 
         /**

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2013 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,7 +47,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.2
      */
-    public <T> void onStart(HystrixInvokable<T> commandInstance) {
+    public void onStart(HystrixInvokable commandInstance) {
         //do nothing by default
     }
 
@@ -59,7 +59,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> T onEmit(HystrixInvokable<T> commandInstance, T value) {
+    public <T> T onEmit(HystrixInvokable commandInstance, T value) {
         return value; //by default, just pass through
     }
 
@@ -72,7 +72,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.2
      */
-    public <T> Exception onError(HystrixInvokable<T> commandInstance, FailureType failureType, Exception e) {
+    public Exception onError(HystrixInvokable commandInstance, FailureType failureType, Exception e) {
         return e; //by default, just pass through
     }
 
@@ -83,7 +83,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> void onSuccess(HystrixInvokable<T> commandInstance) {
+    public void onSuccess(HystrixInvokable commandInstance) {
         //do nothing by default
     }
 
@@ -94,7 +94,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.2
      */
-    public <T> void onThreadStart(HystrixInvokable<T> commandInstance) {
+    public void onThreadStart(HystrixInvokable commandInstance) {
         //do nothing by default
     }
 
@@ -107,7 +107,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.2
      */
-    public <T> void onThreadComplete(HystrixInvokable<T> commandInstance) {
+    public void onThreadComplete(HystrixInvokable commandInstance) {
         // do nothing by default
     }
 
@@ -118,7 +118,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> void onExecutionStart(HystrixInvokable<T> commandInstance) {
+    public void onExecutionStart(HystrixInvokable commandInstance) {
         //do nothing by default
     }
 
@@ -130,7 +130,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> T onExecutionEmit(HystrixInvokable<T> commandInstance, T value) {
+    public <T> T onExecutionEmit(HystrixInvokable commandInstance, T value) {
         return value; //by default, just pass through
     }
 
@@ -142,7 +142,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> Exception onExecutionError(HystrixInvokable<T> commandInstance, Exception e) {
+    public Exception onExecutionError(HystrixInvokable commandInstance, Exception e) {
         return e; //by default, just pass through
     }
 
@@ -153,7 +153,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> void onExecutionSuccess(HystrixInvokable<T> commandInstance) {
+    public void onExecutionSuccess(HystrixInvokable commandInstance) {
         //do nothing by default
     }
 
@@ -164,7 +164,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> void onCacheHit(HystrixInvokable<T> commandInstance) {
+    public void onCacheHit(HystrixInvokable commandInstance) {
         //do nothing by default
     }
 
@@ -175,7 +175,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.5.9
      */
-    public <T> void onUnsubscribe(HystrixInvokable<T> commandInstance) {
+    public void onUnsubscribe(HystrixInvokable commandInstance) {
         //do nothing by default
     }
 }

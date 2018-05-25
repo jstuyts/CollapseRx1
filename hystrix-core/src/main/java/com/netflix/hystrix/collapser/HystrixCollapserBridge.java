@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,12 +15,11 @@
  */
 package com.netflix.hystrix.collapser;
 
-import java.util.Collection;
-
-import rx.Observable;
-
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 import com.netflix.hystrix.HystrixCollapserKey;
+import rx.Observable;
+
+import java.util.Collection;
 
 /**
  * Bridge between HystrixCollapser and RequestCollapser to expose 'protected' and 'private' functionality across packages.

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,16 +15,14 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Test;
-
-import rx.Scheduler;
-import rx.functions.Action0;
-import rx.schedulers.Schedulers;
+import static org.junit.Assert.assertTrue;
 
 public class HystrixContextSchedulerTest {
     
@@ -39,19 +37,16 @@ public class HystrixContextSchedulerTest {
 
         Scheduler.Worker w = hcs.createWorker();
         try {
-            w.schedule(new Action0() {
-                @Override
-                public void call() {
-                    start.countDown();
+            w.schedule(() -> {
+                start.countDown();
+                try {
                     try {
-                        try {
-                            Thread.sleep(5000);
-                        } catch (InterruptedException ex) {
-                            interrupted.set(true);
-                        }
-                    } finally {
-                        end.countDown();
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ex) {
+                        interrupted.set(true);
                     }
+                } finally {
+                    end.countDown();
                 }
             });
             

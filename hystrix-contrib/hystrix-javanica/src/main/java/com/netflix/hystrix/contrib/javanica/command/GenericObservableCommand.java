@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,6 @@ import com.netflix.hystrix.exception.HystrixBadRequestException;
 import rx.Completable;
 import rx.Observable;
 import rx.Single;
-import rx.functions.Func1;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.List;
@@ -62,17 +61,13 @@ public class GenericObservableCommand extends HystrixObservableCommand {
     protected Observable construct() {
         Observable result;
         try {
-            Observable observable = toObservable(commandActions.getCommandAction().execute(executionType));
-            result = observable
-                    .onErrorResumeNext(new Func1<Throwable, Observable>() {
-                        @Override
-                        public Observable call(Throwable throwable) {
-                            if (isIgnorable(throwable)) {
-                                return Observable.error(new HystrixBadRequestException(throwable.getMessage(), throwable));
-                            }
-                            return Observable.error(throwable);
-                        }
-                    });
+            Observable<Object> observable = toObservable(commandActions.getCommandAction().execute(executionType));
+            result = observable.onErrorResumeNext(throwable -> {
+                if (isIgnorable(throwable)) {
+                    return Observable.error(new HystrixBadRequestException(throwable.getMessage(), throwable));
+                }
+                return Observable.error(throwable);
+            });
             flushCache();
         } catch (CommandActionExecutionException throwable) {
             Throwable cause = throwable.getCause();

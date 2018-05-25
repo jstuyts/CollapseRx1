@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,26 +49,26 @@ public interface HystrixThreadPool {
      *
      * @return ThreadPoolExecutor
      */
-    public ExecutorService getExecutor();
+    ExecutorService getExecutor();
 
-    public Scheduler getScheduler();
+    Scheduler getScheduler();
 
-    public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread);
+    Scheduler getScheduler(Func0<Boolean> shouldInterruptThread);
 
     /**
      * Mark when a thread begins executing a command.
      */
-    public void markThreadExecution();
+    void markThreadExecution();
 
     /**
      * Mark when a thread completes executing a command.
      */
-    public void markThreadCompletion();
+    void markThreadCompletion();
 
     /**
      * Mark when a command gets rejected from the threadpool
      */
-    public void markThreadRejection();
+    void markThreadRejection();
 
     /**
      * Whether the queue will allow adding an item to it.
@@ -78,17 +78,17 @@ public interface HystrixThreadPool {
      *
      * @return boolean whether there is space on the queue
      */
-    public boolean isQueueSpaceAvailable();
+    boolean isQueueSpaceAvailable();
 
     /**
      * @ExcludeFromJavadoc
      */
-    /* package */static class Factory {
+    /* package */ class Factory {
         /*
          * Use the String from HystrixThreadPoolKey.name() instead of the HystrixThreadPoolKey instance as it's just an interface and we can't ensure the object
          * we receive implements hashcode/equals correctly and do not want the default hashcode/equals which would create a new threadpool for every object we get even if the name is the same
          */
-        /* package */final static ConcurrentHashMap<String, HystrixThreadPool> threadPools = new ConcurrentHashMap<String, HystrixThreadPool>();
+        /* package */final static ConcurrentHashMap<String, HystrixThreadPool> threadPools = new ConcurrentHashMap<>();
 
         /**
          * Get the {@link HystrixThreadPool} instance for a given {@link HystrixThreadPoolKey}.
@@ -127,7 +127,7 @@ public interface HystrixThreadPool {
             for (HystrixThreadPool pool : threadPools.values()) {
                 pool.getExecutor().shutdown();
             }
-            threadPools.clear();
+            clearThreadPoolRegistries();
         }
 
         /**
@@ -149,7 +149,12 @@ public interface HystrixThreadPool {
                     throw new RuntimeException("Interrupted while waiting for thread-pools to terminate. Pools may not be correctly shutdown or cleared.", e);
                 }
             }
+            clearThreadPoolRegistries();
+        }
+
+        private static void clearThreadPoolRegistries() {
             threadPools.clear();
+            HystrixThreadPoolDefault.threadPoolsByKey.clear();
         }
     }
 
@@ -157,7 +162,7 @@ public interface HystrixThreadPool {
      * @ExcludeFromJavadoc
      * @ThreadSafe
      */
-    /* package */static class HystrixThreadPoolDefault implements HystrixThreadPool {
+    /* package */ class HystrixThreadPoolDefault implements HystrixThreadPool {
         private static final Logger logger = LoggerFactory.getLogger(HystrixThreadPoolDefault.class);
 
         private final HystrixThreadPoolProperties properties;
@@ -191,12 +196,7 @@ public interface HystrixThreadPool {
         @Override
         public Scheduler getScheduler() {
             //by default, interrupt underlying threads on timeout
-            return getScheduler(new Func0<Boolean>() {
-                @Override
-                public Boolean call() {
-                    return true;
-                }
-            });
+            return getScheduler(() -> true);
         }
 
         @Override

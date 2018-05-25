@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,12 +23,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class HystrixCounters {
     private static final AtomicInteger concurrentThreadsExecuting = new AtomicInteger(0);
 
-    /* package-private */ static int incrementGlobalConcurrentThreads() {
-        return concurrentThreadsExecuting.incrementAndGet();
+    /* package-private */ static void incrementGlobalConcurrentThreads() {
+        concurrentThreadsExecuting.incrementAndGet();
     }
 
-    /* package-private */ static int decrementGlobalConcurrentThreads() {
-        return concurrentThreadsExecuting.decrementAndGet();
+    /* package-private */ static void decrementGlobalConcurrentThreads() {
+        concurrentThreadsExecuting.decrementAndGet();
     }
 
     /**

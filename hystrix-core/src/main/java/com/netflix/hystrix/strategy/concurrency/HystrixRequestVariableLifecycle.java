@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,7 @@ public interface HystrixRequestVariableLifecycle<T> {
      * 
      * @return T with initial value or null if none.
      */
-    public T initialValue();
+    T initialValue();
 
     /**
      * Invoked when request scope is shutdown to allow for cleanup.
@@ -43,6 +43,6 @@ public interface HystrixRequestVariableLifecycle<T> {
      *            <p>
      *            If nothing needs to be cleaned up then nothing needs to be done in this method.
      */
-    public void shutdown(T value);
+    void shutdown(T value);
 
 }

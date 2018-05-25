@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,8 +22,10 @@ import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
-import rx.*;
-import rx.functions.Action1;
+import rx.Completable;
+import rx.Observable;
+import rx.Observer;
+import rx.Single;
 
 import static org.junit.Assert.assertEquals;
 
@@ -38,7 +40,7 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
     protected abstract UserService createUserService();
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         userService = createUserService();
     }
 
@@ -71,13 +73,7 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
         });
 
         Observable<User> fs = userService.getUser("1", "name: ");
-        fs.subscribe(new Action1<User>() {
-
-            @Override
-            public void call(User user) {
-                assertEquals("name: 1", user.getName());
-            }
-        });
+        fs.subscribe(user -> assertEquals("name: 1", user.getName()));
     }
 
     @Test
@@ -88,57 +84,32 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
     @Test
     public void testGetCompletableUser2() {
         Completable completable = userService.getCompletableUser2(null, "name: ");
-        completable.<User>toObservable().subscribe(new Action1<User>() {
-            @Override
-            public void call(User user) {
-                assertEquals("default_id", user.getId());
-            }
-        });
+        completable.<User>toObservable().subscribe(user -> assertEquals("default_id", user.getId()));
     }
 
     @Test
     public void testGetCompletableUser3() {
         Completable completable = userService.getCompletableUser3(null, "name: ");
-        completable.<User>toObservable().subscribe(new Action1<User>() {
-            @Override
-            public void call(User user) {
-                assertEquals("default_id", user.getId());
-            }
-        });
+        completable.<User>toObservable().subscribe(user -> assertEquals("default_id", user.getId()));
     }
 
     @Test
     public void testGetSingleUser() {
         final String id = "1";
         Single<User> user = userService.getSingleUser(id, "name: ");
-        user.subscribe(new Action1<User>() {
-            @Override
-            public void call(User user) {
-                assertEquals(id, user.getId());
-            }
-        });
+        user.subscribe(user1 -> assertEquals(id, user1.getId()));
     }
 
     @Test
     public void testGetSingleUser2(){
         Single<User> user = userService.getSingleUser2(null, "name: ");
-        user.subscribe(new Action1<User>() {
-            @Override
-            public void call(User user) {
-                assertEquals("default_id", user.getId());
-            }
-        });
+        user.subscribe(user1 -> assertEquals("default_id", user1.getId()));
     }
 
     @Test
     public void testGetSingleUser3(){
         Single<User> user = userService.getSingleUser3(null, "name: ");
-        user.subscribe(new Action1<User>() {
-            @Override
-            public void call(User user) {
-                assertEquals("default_id", user.getId());
-            }
-        });
+        user.subscribe(user1 -> assertEquals("default_id", user1.getId()));
     }
 
     @Test
@@ -227,17 +198,14 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
 
 
         private Observable<User> createObservable(final String id, final String name) {
-            return Observable.create(new Observable.OnSubscribe<User>() {
-                @Override
-                public void call(Subscriber<? super User> observer) {
-                    try {
-                        if (!observer.isUnsubscribed()) {
-                            observer.onNext(new User(id, name + id));
-                            observer.onCompleted();
-                        }
-                    } catch (Exception e) {
-                        observer.onError(e);
+            return Observable.create(observer -> {
+                try {
+                    if (!observer.isUnsubscribed()) {
+                        observer.onNext(new User(id, name + id));
+                        observer.onCompleted();
                     }
+                } catch (Exception e) {
+                    observer.onError(e);
                 }
             });
         }

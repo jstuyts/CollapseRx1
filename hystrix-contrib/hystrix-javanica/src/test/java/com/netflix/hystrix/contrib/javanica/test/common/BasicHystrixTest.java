@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.test.common;
 
-import com.google.common.base.Throwables;
 import com.hystrix.junit.HystrixRequestContextRule;
 import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixThreadPool;
@@ -40,7 +39,7 @@ public abstract class BasicHystrixTest {
         request.reset();
     }
 
-    protected final HystrixThreadPoolProperties getThreadPoolProperties(HystrixInvokableInfo<?> command) {
+    protected final HystrixThreadPoolProperties getThreadPoolProperties(HystrixInvokableInfo command) {
         try {
             Field field = command.getClass().getSuperclass().getSuperclass().getSuperclass().getDeclaredField("threadPool");
             field.setAccessible(true);
@@ -50,10 +49,8 @@ public abstract class BasicHystrixTest {
             field2.setAccessible(true);
             return (HystrixThreadPoolProperties) field2.get(threadPool);
 
-        } catch (NoSuchFieldException e) {
-            throw Throwables.propagate(e);
-        } catch (IllegalAccessException e) {
-            throw Throwables.propagate(e);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
         }
     }
 }

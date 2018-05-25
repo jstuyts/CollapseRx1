@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,7 @@ import rx.Observable;
  * 
  * @ThreadSafe
  */
-public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> implements HystrixObservable<R>, HystrixInvokableInfo<R> {
+public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> implements HystrixObservable<R>, HystrixInvokableInfo {
 
     /**
      * Construct a {@link HystrixObservableCommand} with defined {@link HystrixCommandGroupKey}.
@@ -40,7 +40,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      * @param group
      *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixObservableCommand} objects.
      *            <p>
-     *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace with,
+     *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interface with,
      *            common business purpose etc.
      */
     protected HystrixObservableCommand(HystrixCommandGroupKey group) {
@@ -113,7 +113,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
          * @param groupKey
          *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixObservableCommand} objects.
          *            <p>
-         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace
+         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interface
          *            with,
          *            common business purpose etc.
          */
@@ -132,7 +132,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
          * @param groupKey
          *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixObservableCommand} objects.
          *            <p>
-         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace
+         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interface
          *            with,
          *            common business purpose etc.
          */
@@ -148,7 +148,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
          *            <p>
          *            NOTE: Every unique {@link HystrixCommandKey} will result in new instance of {@link HystrixCommandProperties}.
          *            Thus,
-         *            the number of variants should be kept to a finite and reasonable number to avoid high-memory usage or memory leacks.
+         *            the number of variants should be kept to a finite and reasonable number to avoid high-memory usage or memory leaks.
          *            <p>
          *            Hundreds of keys is fine, tens of thousands is probably not.
          * @return Setter for fluent interface via method chaining

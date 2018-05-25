@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,7 +50,7 @@ public class ExecutionTypeTest {
     }
 
     @Test
-    public void should_return_correct_execution_type() throws Exception {
+    public void should_return_correct_execution_type() {
         assertEquals("Unexpected execution type for method return type: " + methodReturnType, expectedType, ExecutionType.getExecutionType(methodReturnType));
 
     }

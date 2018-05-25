@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -108,94 +108,34 @@ public final class HystrixPropertiesManager {
 
     private static final Map<String, PropSetter<HystrixCommandProperties.Setter, String>> CMD_PROP_MAP =
             ImmutableMap.<String, PropSetter<HystrixCommandProperties.Setter, String>>builder()
-                    .put(EXECUTION_ISOLATION_STRATEGY, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withExecutionIsolationStrategy(toEnum(EXECUTION_ISOLATION_STRATEGY, value, HystrixCommandProperties.ExecutionIsolationStrategy.class,
-                                    HystrixCommandProperties.ExecutionIsolationStrategy.values()));
-                        }
-                    })
-                    .put(EXECUTION_ISOLATION_SEMAPHORE_MAX_CONCURRENT_REQUESTS, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withExecutionIsolationSemaphoreMaxConcurrentRequests(toInt(EXECUTION_ISOLATION_SEMAPHORE_MAX_CONCURRENT_REQUESTS, value));
-                        }
-                    })
-                    .put(REQUEST_CACHE_ENABLED, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withRequestCacheEnabled(toBoolean(value));
-                        }
-                    })
+                    .put(EXECUTION_ISOLATION_STRATEGY, (setter, value) -> setter.withExecutionIsolationStrategy(toEnum(EXECUTION_ISOLATION_STRATEGY, value, HystrixCommandProperties.ExecutionIsolationStrategy.class,
+                            HystrixCommandProperties.ExecutionIsolationStrategy.values())))
+                    .put(EXECUTION_ISOLATION_SEMAPHORE_MAX_CONCURRENT_REQUESTS, (setter, value) -> setter.withExecutionIsolationSemaphoreMaxConcurrentRequests(toInt(EXECUTION_ISOLATION_SEMAPHORE_MAX_CONCURRENT_REQUESTS, value)))
+                    .put(REQUEST_CACHE_ENABLED, (setter, value) -> setter.withRequestCacheEnabled(toBoolean(value)))
                     .build();
 
 
     private static final Map<String, PropSetter<HystrixThreadPoolProperties.Setter, String>> TP_PROP_MAP =
             ImmutableMap.<String, PropSetter<HystrixThreadPoolProperties.Setter, String>>builder()
-                    .put(MAX_QUEUE_SIZE, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixThreadPoolProperties.Setter setter, String value) {
-                            setter.withMaxQueueSize(toInt(MAX_QUEUE_SIZE, value));
-                        }
-                    })
-                    .put(CORE_SIZE, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
-                                @Override
-                                public void set(HystrixThreadPoolProperties.Setter setter, String value) {
-                                    setter.withCoreSize(toInt(CORE_SIZE, value));
-                                }
-                            }
+                    .put(MAX_QUEUE_SIZE, (setter, value) -> setter.withMaxQueueSize(toInt(MAX_QUEUE_SIZE, value)))
+                    .put(CORE_SIZE, (setter, value) -> setter.withCoreSize(toInt(CORE_SIZE, value))
                     )
-                    .put(MAXIMUM_SIZE, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
-                                @Override
-                                public void set(HystrixThreadPoolProperties.Setter setter, String value) {
-                                    setter.withMaximumSize(toInt(MAXIMUM_SIZE, value));
-                                }
-                            }
+                    .put(MAXIMUM_SIZE, (setter, value) -> setter.withMaximumSize(toInt(MAXIMUM_SIZE, value))
                     )
-                    .put(ALLOW_MAXIMUM_SIZE_TO_DIVERGE_FROM_CORE_SIZE, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixThreadPoolProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withAllowMaximumSizeToDivergeFromCoreSize(toBoolean(value));
-                        }
-                    })
-                    .put(KEEP_ALIVE_TIME_MINUTES, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
-                                @Override
-                                public void set(HystrixThreadPoolProperties.Setter setter, String value) {
-                                    setter.withKeepAliveTimeMinutes(toInt(KEEP_ALIVE_TIME_MINUTES, value));
-                                }
-                            }
+                    .put(ALLOW_MAXIMUM_SIZE_TO_DIVERGE_FROM_CORE_SIZE, (setter, value) -> setter.withAllowMaximumSizeToDivergeFromCoreSize(toBoolean(value)))
+                    .put(KEEP_ALIVE_TIME_MINUTES, (setter, value) -> setter.withKeepAliveTimeMinutes(toInt(KEEP_ALIVE_TIME_MINUTES, value))
                     )
-                    .put(QUEUE_SIZE_REJECTION_THRESHOLD, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
-                                @Override
-                                public void set(HystrixThreadPoolProperties.Setter setter, String value) {
-                                    setter.withQueueSizeRejectionThreshold(toInt(QUEUE_SIZE_REJECTION_THRESHOLD, value));
-                                }
-                            }
+                    .put(QUEUE_SIZE_REJECTION_THRESHOLD, (setter, value) -> setter.withQueueSizeRejectionThreshold(toInt(QUEUE_SIZE_REJECTION_THRESHOLD, value))
                     )
                     .build();
 
 
     private static final Map<String, PropSetter<HystrixCollapserProperties.Setter, String>> COLLAPSER_PROP_MAP =
             ImmutableMap.<String, PropSetter<HystrixCollapserProperties.Setter, String>>builder()
-                    .put(TIMER_DELAY_IN_MILLISECONDS, new PropSetter<HystrixCollapserProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCollapserProperties.Setter setter, String value) {
-                            setter.withTimerDelayInMilliseconds(toInt(TIMER_DELAY_IN_MILLISECONDS, value));
-                        }
-                    })
-                    .put(MAX_REQUESTS_IN_BATCH, new PropSetter<HystrixCollapserProperties.Setter, String>() {
-                                @Override
-                                public void set(HystrixCollapserProperties.Setter setter, String value) {
-                                    setter.withMaxRequestsInBatch(toInt(MAX_REQUESTS_IN_BATCH, value));
-                                }
-                            }
+                    .put(TIMER_DELAY_IN_MILLISECONDS, (setter, value) -> setter.withTimerDelayInMilliseconds(toInt(TIMER_DELAY_IN_MILLISECONDS, value)))
+                    .put(MAX_REQUESTS_IN_BATCH, (setter, value) -> setter.withMaxRequestsInBatch(toInt(MAX_REQUESTS_IN_BATCH, value))
                     )
-                    .put(REQUEST_CACHE_ENABLED, new PropSetter<HystrixCollapserProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withRequestCacheEnabled(toBoolean(value));
-                        }
-                    })
+                    .put(REQUEST_CACHE_ENABLED, (setter, value) -> setter.withRequestCacheEnabled(toBoolean(value)))
                     .build();
 
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +15,10 @@
  */
 package com.netflix.hystrix.collapser;
 
-import java.lang.ref.Reference;
-
 import com.netflix.hystrix.util.HystrixTimer;
 import com.netflix.hystrix.util.HystrixTimer.TimerListener;
+
+import java.lang.ref.Reference;
 
 /**
  * Actual CollapserTimer implementation for triggering batch execution that uses HystrixTimer.

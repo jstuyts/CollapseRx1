@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,7 +41,6 @@ import org.aspectj.lang.reflect.MethodSignature;
 import rx.Completable;
 import rx.Observable;
 import rx.Single;
-import rx.functions.Func1;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -108,18 +107,15 @@ public class HystrixCommandAspect {
     }
 
     private Object executeObservable(HystrixInvokable invokable, ExecutionType executionType, final MetaHolder metaHolder) {
-        return mapObservable(((Observable) CommandExecutor.execute(invokable, executionType, metaHolder))
-                .onErrorResumeNext(new Func1<Throwable, Observable>() {
-                    @Override
-                    public Observable call(Throwable throwable) {
-                        if (throwable instanceof HystrixBadRequestException) {
-                            return Observable.error(throwable.getCause());
-                        } else if (throwable instanceof HystrixRuntimeException) {
-                            HystrixRuntimeException hystrixRuntimeException = (HystrixRuntimeException) throwable;
-                            return Observable.error(hystrixRuntimeExceptionToThrowable(metaHolder, hystrixRuntimeException));
-                        }
-                        return Observable.error(throwable);
+        return mapObservable(((Observable<Object>) CommandExecutor.execute(invokable, executionType, metaHolder))
+                .onErrorResumeNext(throwable -> {
+                    if (throwable instanceof HystrixBadRequestException) {
+                        return Observable.error(throwable.getCause());
+                    } else if (throwable instanceof HystrixRuntimeException) {
+                        HystrixRuntimeException hystrixRuntimeException = (HystrixRuntimeException) throwable;
+                        return Observable.error(hystrixRuntimeExceptionToThrowable(metaHolder, hystrixRuntimeException));
                     }
+                    return Observable.error(throwable);
                 }), metaHolder);
     }
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +34,6 @@ import rx.Observable.OnSubscribe;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func0;
-import rx.functions.Func1;
 import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 
@@ -43,12 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -73,29 +67,24 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
          */
         int count = Runtime.getRuntime().availableProcessors();
         final CountDownLatch latch = new CountDownLatch(count);
-        ArrayList<Future<Boolean>> futures = new ArrayList<Future<Boolean>>();
+        ArrayList<Future<Boolean>> futures = new ArrayList<>();
         for (int i = 0; i < count; ++i) {
-            futures.add(Observable.create(new OnSubscribe<Boolean>() {
-                @Override
-                public void call(Subscriber<? super Boolean> sub) {
-                    latch.countDown();
-                    try {
-                        latch.await();
+            futures.add(Observable.create((OnSubscribe<Boolean>) sub -> {
+                latch.countDown();
+                try {
+                    latch.await();
 
-                        sub.onNext(true);
-                        sub.onCompleted();
-                    } catch (InterruptedException e) {
-                        sub.onError(e);
-                    }
+                    sub.onNext(true);
+                    sub.onCompleted();
+                } catch (InterruptedException e) {
+                    sub.onError(e);
                 }
             }).subscribeOn(Schedulers.computation()).toBlocking().toFuture());
         }
         for (Future<Boolean> future : futures) {
             try {
                 future.get();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            } catch (ExecutionException e) {
+            } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -146,7 +135,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         });
 
         latch.await();
-        assertEquals(null, command.getFailedExecutionException());
+        assertNull(command.getFailedExecutionException());
 
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isSuccessfulExecution());
@@ -175,7 +164,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             TestHystrixObservableCommand<Boolean> command = new SuccessfulTestCommand(isolationStrategy);
             assertEquals(true, command.observe().toBlocking().single());
 
-            assertEquals(null, command.getFailedExecutionException());
+            assertNull(command.getFailedExecutionException());
 
             assertTrue(command.getExecutionTimeInMilliseconds() > -1);
             assertTrue(command.isSuccessfulExecution());
@@ -469,8 +458,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testObserveOnImmediateSchedulerByDefaultForSemaphoreIsolation() throws Exception {
 
-        final AtomicReference<Thread> commandThread = new AtomicReference<Thread>();
-        final AtomicReference<Thread> subscribeThread = new AtomicReference<Thread>();
+        final AtomicReference<Thread> commandThread = new AtomicReference<>();
+        final AtomicReference<Thread> subscribeThread = new AtomicReference<>();
 
         TestHystrixObservableCommand<Boolean> command = new TestHystrixObservableCommand<Boolean>(TestHystrixObservableCommand.testPropsBuilder()
                 .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))) {
@@ -518,9 +507,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         String mainThreadName = Thread.currentThread().getName();
 
         // semaphore should be on the calling thread
-        assertTrue(commandThread.get().getName().equals(mainThreadName));
+        assertEquals(commandThread.get().getName(), mainThreadName);
         System.out.println("testObserveOnImmediateSchedulerByDefaultForSemaphoreIsolation: " + subscribeThread.get() + " => " + mainThreadName);
-        assertTrue(subscribeThread.get().getName().equals(mainThreadName));
+        assertEquals(subscribeThread.get().getName(), mainThreadName);
 
         // semaphore isolated
         assertFalse(command.isExecutedInThread());
@@ -561,33 +550,23 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                 new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(1));
 
         final TestSemaphoreCommand command2 = new TestSemaphoreCommand(semaphore, 200, TestSemaphoreCommand.RESULT_SUCCESS);
-        Runnable r2 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    command2.observe().toBlocking().toFuture().get();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    exceptionReceived.set(true);
-                }
+        Runnable r2 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), () -> {
+            try {
+                command2.observe().toBlocking().toFuture().get();
+            } catch (Exception e) {
+                e.printStackTrace();
+                exceptionReceived.set(true);
             }
-
         });
 
         final TestSemaphoreCommand command3 = new TestSemaphoreCommand(semaphore, 200, TestSemaphoreCommand.RESULT_SUCCESS);
-        Runnable r3 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    command3.observe().toBlocking().toFuture().get();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    exceptionReceived.set(true);
-                }
+        Runnable r3 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), () -> {
+            try {
+                command3.observe().toBlocking().toFuture().get();
+            } catch (Exception e) {
+                e.printStackTrace();
+                exceptionReceived.set(true);
             }
-
         });
 
         // 2 threads, the second should be rejected by the semaphore
@@ -624,38 +603,28 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     @Test
     public void testRejectedExecutionSemaphore() {
-        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(2);
+        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<>(2);
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
         final TestSemaphoreCommand2 command1 = new TestSemaphoreCommand2(1, 200);
-        Runnable r1 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    results.add(command1.observe().toBlocking().single());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    exceptionReceived.set(true);
-                }
+        Runnable r1 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), () -> {
+            try {
+                results.add(command1.observe().toBlocking().single());
+            } catch (Exception e) {
+                e.printStackTrace();
+                exceptionReceived.set(true);
             }
-
         });
 
         final TestSemaphoreCommand2 command2 = new TestSemaphoreCommand2(1, 200);
-        Runnable r2 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    results.add(command2.observe().toBlocking().single());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    exceptionReceived.set(true);
-                }
+        Runnable r2 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), () -> {
+            try {
+                results.add(command2.observe().toBlocking().single());
+            } catch (Exception e) {
+                e.printStackTrace();
+                exceptionReceived.set(true);
             }
-
         });
 
         // 2 threads, the second should be rejected by the semaphore
@@ -705,8 +674,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         final CountDownLatch sharedLatch = new CountDownLatch(1);
         final CountDownLatch isolatedLatch = new CountDownLatch(1);
 
-        final List<HystrixObservableCommand<Boolean>> commands = new ArrayList<HystrixObservableCommand<Boolean>>();
-        final List<Observable<Boolean>> results = new ArrayList<Observable<Boolean>>();
+        final List<HystrixObservableCommand<Boolean>> commands = new ArrayList<>();
+        final List<Observable<Boolean>> results = new ArrayList<>();
 
         HystrixObservableCommand<Boolean> isolated = new LatchedSemaphoreCommand("ObservableCommand-Isolated", isolatedSemaphore, startLatch, isolatedLatch);
         commands.add(isolated);
@@ -728,7 +697,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         final CountDownLatch allTerminal = new CountDownLatch(1);
 
         Observable.merge(results)
-                .subscribeOn(Schedulers.computation())
+                .subscribeOn(Schedulers.newThread())
                 .subscribe(new Subscriber<Boolean>() {
                     @Override
                     public void onCompleted() {
@@ -843,8 +812,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
      */
     @Test
     public void testRequestCache1UsingThreadIsolation() {
-        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<String>(true, "A");
-        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(true, "A");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(true, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(true, "A");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -869,7 +838,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         // the execution log for command2 should show it came from cache
         assertCommandExecutionEvents(command2, HystrixEventType.EMIT, HystrixEventType.SUCCESS, HystrixEventType.RESPONSE_FROM_CACHE);
-        assertTrue(command2.getExecutionTimeInMilliseconds() == -1);
+        assertEquals(command2.getExecutionTimeInMilliseconds(), -1);
         assertTrue(command2.isResponseFromCache());
         assertNull(command2.getExecutionException());
     }
@@ -879,8 +848,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
      */
     @Test
     public void testRequestCache2UsingThreadIsolation() {
-        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<String>(true, "A");
-        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(true, "B");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(true, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(true, "B");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -909,9 +878,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
      */
     @Test
     public void testRequestCache3UsingThreadIsolation() {
-        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<String>(true, "A");
-        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(true, "B");
-        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<String>(true, "A");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(true, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(true, "B");
+        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<>(true, "A");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -936,7 +905,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         assertCommandExecutionEvents(command1, HystrixEventType.EMIT, HystrixEventType.SUCCESS);
         assertCommandExecutionEvents(command2, HystrixEventType.EMIT, HystrixEventType.SUCCESS);
         assertCommandExecutionEvents(command3, HystrixEventType.EMIT, HystrixEventType.SUCCESS, HystrixEventType.RESPONSE_FROM_CACHE);
-        assertTrue(command3.getExecutionTimeInMilliseconds() == -1);
+        assertEquals(command3.getExecutionTimeInMilliseconds(), -1);
         assertTrue(command3.isResponseFromCache());
     }
 
@@ -978,16 +947,16 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         // the execution log for command2 should show it came from cache
         assertCommandExecutionEvents(command2, HystrixEventType.EMIT, HystrixEventType.SUCCESS, HystrixEventType.RESPONSE_FROM_CACHE);
-        assertTrue(command2.getExecutionTimeInMilliseconds() == -1);
+        assertEquals(command2.getExecutionTimeInMilliseconds(), -1);
         assertTrue(command2.isResponseFromCache());
 
         assertCommandExecutionEvents(command3, HystrixEventType.EMIT, HystrixEventType.SUCCESS, HystrixEventType.RESPONSE_FROM_CACHE);
         assertTrue(command3.isResponseFromCache());
-        assertTrue(command3.getExecutionTimeInMilliseconds() == -1);
+        assertEquals(command3.getExecutionTimeInMilliseconds(), -1);
 
         assertCommandExecutionEvents(command4, HystrixEventType.EMIT, HystrixEventType.SUCCESS, HystrixEventType.RESPONSE_FROM_CACHE);
         assertTrue(command4.isResponseFromCache());
-        assertTrue(command4.getExecutionTimeInMilliseconds() == -1);
+        assertEquals(command4.getExecutionTimeInMilliseconds(), -1);
 
         // semaphore isolated
         assertFalse(command1.isExecutedInThread());
@@ -1001,9 +970,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
      */
     @Test
     public void testNoRequestCache3UsingThreadIsolation() {
-        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<String>(false, "A");
-        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(false, "B");
-        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<String>(false, "A");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(false, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(false, "B");
+        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<>(false, "A");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -1132,10 +1101,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             /* force the RequestVariable to not be initialized */
             HystrixRequestContext.setContextOnCurrentThread(null);
 
-            SuccessfulCacheableCommand<String> command = new SuccessfulCacheableCommand<String>(true, "one");
+            SuccessfulCacheableCommand<String> command = new SuccessfulCacheableCommand<>(true, "one");
             assertEquals("one", command.observe().toBlocking().single());
 
-            SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(true, "two");
+            SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(true, "two");
             assertEquals("two", command2.observe().toBlocking().toFuture().get());
 
             fail("We expect an exception because cacheKey requires RequestVariable.");
@@ -1244,9 +1213,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             fail("we expect to receive a " + HystrixBadRequestException.class.getSimpleName());
         } catch (ExecutionException e) {
             e.printStackTrace();
-            if (e.getCause() instanceof HystrixBadRequestException) {
-                // success
-            } else {
+            if (!(e.getCause() instanceof HystrixBadRequestException)) {
                 fail("We expect a " + HystrixBadRequestException.class.getSimpleName() + " but got a " + e.getClass().getSimpleName());
             }
         } catch (Exception e) {
@@ -1290,7 +1257,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testCheckedExceptionViaObserve() throws InterruptedException {
         CommandWithCheckedException command = new CommandWithCheckedException();
-        final AtomicReference<Throwable> t = new AtomicReference<Throwable>();
+        final AtomicReference<Throwable> t = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         try {
             command.observe().subscribe(new Observer<Boolean>() {
@@ -1341,7 +1308,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testErrorThrownViaObserve() throws InterruptedException {
         CommandWithErrorThrown command = new CommandWithErrorThrown(true);
-        final AtomicReference<Throwable> t = new AtomicReference<Throwable>();
+        final AtomicReference<Throwable> t = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         try {
             command.observe().subscribe(new Observer<Boolean>() {
@@ -1402,7 +1369,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     }
 
-    /**
+    /*
      *********************** HystrixObservableCommand-specific THREAD-ISOLATED Execution Hook Tests **************************************
      */
 
@@ -1415,20 +1382,12 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testExecutionHookThreadMultipleEmitsAndThenSuccess() {
         assertHooksOnSuccess(
-                new Func0<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public TestHystrixObservableCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.MULTIPLE_EMITS_THEN_SUCCESS);
-                    }
-                },
-                new Action1<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public void call(TestHystrixObservableCommand<Integer> command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(4, 0, 1));
-                        assertTrue(hook.executionEventsMatch(4, 0, 1));
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionSuccess - onThreadComplete - onSuccess - ", command.getBuilder().executionHook.executionSequence.toString());
-                    }
+                () -> getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.MULTIPLE_EMITS_THEN_SUCCESS),
+                command -> {
+                    TestableExecutionHook hook = command.getBuilder().executionHook;
+                    assertTrue(hook.commandEmissionsMatch(4, 0, 1));
+                    assertTrue(hook.executionEventsMatch(4, 0, 1));
+                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionSuccess - onThreadComplete - onSuccess - ", command.getBuilder().executionHook.executionSequence.toString());
                 });
     }
 
@@ -1441,30 +1400,22 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testExecutionHookThreadMultipleEmitsThenError() {
         assertHooksOnSuccess(
-                new Func0<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public TestHystrixObservableCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.MULTIPLE_EMITS_THEN_FAILURE, 0);
-                    }
-                },
-                new Action1<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public void call(TestHystrixObservableCommand<Integer> command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(8, 0, 1));
-                        assertTrue(hook.executionEventsMatch(4, 1, 0));
-                        assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - " +
-                                "onExecutionEmit - !onRunSuccess - !onComplete - onEmit - " +
-                                "onExecutionEmit - !onRunSuccess - !onComplete - onEmit - " +
-                                "onExecutionEmit - !onRunSuccess - !onComplete - onEmit - " +
-                                "onExecutionEmit - !onRunSuccess - !onComplete - onEmit - " +
-                                "onExecutionError - !onRunError - onThreadComplete - !onComplete - onEmit - " +
-                                "!onComplete - onEmit - " +
-                                "!onComplete - onEmit - " +
-                                "!onComplete - onEmit - " +
-                                "onSuccess - ", command.getBuilder().executionHook.executionSequence.toString());
-                    }
+                () -> getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.MULTIPLE_EMITS_THEN_FAILURE, 0),
+                command -> {
+                    TestableExecutionHook hook = command.getBuilder().executionHook;
+                    assertTrue(hook.commandEmissionsMatch(8, 0, 1));
+                    assertTrue(hook.executionEventsMatch(4, 1, 0));
+                    assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
+                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - " +
+                            "onExecutionEmit - !onRunSuccess - !onComplete - onEmit - " +
+                            "onExecutionEmit - !onRunSuccess - !onComplete - onEmit - " +
+                            "onExecutionEmit - !onRunSuccess - !onComplete - onEmit - " +
+                            "onExecutionEmit - !onRunSuccess - !onComplete - onEmit - " +
+                            "onExecutionError - !onRunError - onThreadComplete - !onComplete - onEmit - " +
+                            "!onComplete - onEmit - " +
+                            "!onComplete - onEmit - " +
+                            "!onComplete - onEmit - " +
+                            "onSuccess - ", command.getBuilder().executionHook.executionSequence.toString());
                 });
     }
 
@@ -1477,22 +1428,14 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testExecutionHookThreadAsyncBadRequestException() {
         assertHooksOnFailure(
-                new Func0<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public TestHystrixObservableCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.ASYNC_BAD_REQUEST);
-                    }
-                },
-                new Action1<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public void call(TestHystrixObservableCommand<Integer> command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertEquals(HystrixBadRequestException.class, hook.getCommandException().getClass());
-                        assertEquals(HystrixBadRequestException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - onError - ", command.getBuilder().executionHook.executionSequence.toString());
-                    }
+                () -> getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.ASYNC_BAD_REQUEST),
+                command -> {
+                    TestableExecutionHook hook = command.getBuilder().executionHook;
+                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                    assertTrue(hook.executionEventsMatch(0, 1, 0));
+                    assertEquals(HystrixBadRequestException.class, hook.getCommandException().getClass());
+                    assertEquals(HystrixBadRequestException.class, hook.getExecutionException().getClass());
+                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - onError - ", command.getBuilder().executionHook.executionSequence.toString());
                 });
     }
 
@@ -1505,22 +1448,14 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testExecutionHookThreadAsyncException2() {
         assertHooksOnFailure(
-                new Func0<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public TestHystrixObservableCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.ASYNC_FAILURE);
-                    }
-                },
-                new Action1<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public void call(TestHystrixObservableCommand<Integer> command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - onError - ", command.getBuilder().executionHook.executionSequence.toString());
-                    }
+                () -> getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.ASYNC_FAILURE),
+                command -> {
+                    TestableExecutionHook hook = command.getBuilder().executionHook;
+                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                    assertTrue(hook.executionEventsMatch(0, 1, 0));
+                    assertEquals(RuntimeException.class, hook.getCommandException().getClass());
+                    assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
+                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - onError - ", command.getBuilder().executionHook.executionSequence.toString());
                 });
     }
 
@@ -1533,21 +1468,13 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testExecutionHookThreadAsyncException4() {
         assertHooksOnSuccess(
-                new Func0<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public TestHystrixObservableCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.ASYNC_FAILURE);
-                    }
-                },
-                new Action1<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public void call(TestHystrixObservableCommand<Integer> command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - !onComplete - onEmit - onSuccess - ", command.getBuilder().executionHook.executionSequence.toString());
-                    }
+                () -> getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.ASYNC_FAILURE),
+                command -> {
+                    TestableExecutionHook hook = command.getBuilder().executionHook;
+                    assertTrue(hook.commandEmissionsMatch(1, 0, 1));
+                    assertTrue(hook.executionEventsMatch(0, 1, 0));
+                    assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
+                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - !onComplete - onEmit - onSuccess - ", command.getBuilder().executionHook.executionSequence.toString());
                 });
     }
 
@@ -1560,22 +1487,14 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testExecutionHookThreadSyncException() {
         assertHooksOnFailure(
-                new Func0<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public TestHystrixObservableCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE);
-                    }
-                },
-                new Action1<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public void call(TestHystrixObservableCommand<Integer> command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - onError - ", command.getBuilder().executionHook.executionSequence.toString());
-                    }
+                () -> getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE),
+                command -> {
+                    TestableExecutionHook hook = command.getBuilder().executionHook;
+                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                    assertTrue(hook.executionEventsMatch(0, 1, 0));
+                    assertEquals(RuntimeException.class, hook.getCommandException().getClass());
+                    assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
+                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - onError - ", command.getBuilder().executionHook.executionSequence.toString());
                 });
     }
 
@@ -1588,22 +1507,14 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testExecutionHookThreadAsyncException3() {
         assertHooksOnFailure(
-                new Func0<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public TestHystrixObservableCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.ASYNC_FAILURE);
-                    }
-                },
-                new Action1<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public void call(TestHystrixObservableCommand<Integer> command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - onError - ", command.getBuilder().executionHook.executionSequence.toString());
-                    }
+                () -> getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.ASYNC_FAILURE),
+                command -> {
+                    TestableExecutionHook hook = command.getBuilder().executionHook;
+                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                    assertTrue(hook.executionEventsMatch(0, 1, 0));
+                    assertEquals(RuntimeException.class, hook.getCommandException().getClass());
+                    assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
+                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - onError - ", command.getBuilder().executionHook.executionSequence.toString());
                 });
     }
 
@@ -1616,22 +1527,14 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testExecutionHookThreadAsyncException() {
         assertHooksOnFailure(
-                new Func0<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public TestHystrixObservableCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.ASYNC_FAILURE);
-                    }
-                },
-                new Action1<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public void call(TestHystrixObservableCommand<Integer> command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - onError - ", command.getBuilder().executionHook.executionSequence.toString());
-                    }
+                () -> getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.ASYNC_FAILURE),
+                command -> {
+                    TestableExecutionHook hook = command.getBuilder().executionHook;
+                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                    assertTrue(hook.executionEventsMatch(0, 1, 0));
+                    assertEquals(RuntimeException.class, hook.getCommandException().getClass());
+                    assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
+                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - onError - ", command.getBuilder().executionHook.executionSequence.toString());
                 });
     }
 
@@ -1641,29 +1544,21 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testExecutionHookThread() {
         assertHooksOnFailure(
-                new Func0<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public TestHystrixObservableCommand<Integer> call() {
-                        return getCircuitOpenCommand(ExecutionIsolationStrategy.THREAD);
-                    }
-                },
-                new Action1<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public void call(TestHystrixObservableCommand<Integer> command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertEquals("onStart - onError - ", command.getBuilder().executionHook.executionSequence.toString());
-                    }
+                () -> getCircuitOpenCommand(ExecutionIsolationStrategy.THREAD),
+                command -> {
+                    TestableExecutionHook hook = command.getBuilder().executionHook;
+                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                    assertTrue(hook.executionEventsMatch(0, 0, 0));
+                    assertEquals(RuntimeException.class, hook.getCommandException().getClass());
+                    assertEquals("onStart - onError - ", command.getBuilder().executionHook.executionSequence.toString());
                 });
     }
 
-    /**
+    /*
      *********************** END HystrixObservableCommand-specific THREAD-ISOLATED Execution Hook Tests **************************************
      */
 
-    /**
+    /*
      ********************* HystrixObservableCommand-specific SEMAPHORE-ISOLATED Execution Hook Tests ***********************************
      */
 
@@ -1675,26 +1570,18 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testExecutionHookSemaphoreException() {
         assertHooksOnFailure(
-                new Func0<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public TestHystrixObservableCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.SEMAPHORE, AbstractTestHystrixCommand.ExecutionResult.FAILURE);
-                    }
-                },
-                new Action1<TestHystrixObservableCommand<Integer>>() {
-                    @Override
-                    public void call(TestHystrixObservableCommand<Integer> command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - ", command.getBuilder().executionHook.executionSequence.toString());
-                    }
+                () -> getCommand(ExecutionIsolationStrategy.SEMAPHORE, AbstractTestHystrixCommand.ExecutionResult.FAILURE),
+                command -> {
+                    TestableExecutionHook hook = command.getBuilder().executionHook;
+                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                    assertTrue(hook.executionEventsMatch(0, 1, 0));
+                    assertEquals(RuntimeException.class, hook.getCommandException().getClass());
+                    assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
+                    assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - ", command.getBuilder().executionHook.executionSequence.toString());
                 });
     }
 
-    /**
+    /*
      ********************* END HystrixObservableCommand-specific SEMAPHORE-ISOLATED Execution Hook Tests ***********************************
      */
 
@@ -1729,7 +1616,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     @Test
     public void testRejectedViaSemaphoreIsolation() {
-        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(2);
+        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<>(2);
 
         final TryableSemaphoreActual semaphore = new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(1));
 
@@ -1788,165 +1675,111 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     @Test
     public void testRejectedViaThreadIsolation() throws InterruptedException {
-        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(10);
-        final List<Thread> executionThreads = Collections.synchronizedList(new ArrayList<Thread>(20));
-        final List<Thread> responseThreads = Collections.synchronizedList(new ArrayList<Thread>(10));
+        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<>(10);
+        final List<Thread> executionThreads = Collections.synchronizedList(new ArrayList<>(20));
+        final List<Thread> responseThreads = Collections.synchronizedList(new ArrayList<>(10));
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
         final CountDownLatch scheduleLatch = new CountDownLatch(2);
         final CountDownLatch successLatch = new CountDownLatch(1);
         final AtomicInteger count = new AtomicInteger();
-        final AtomicReference<TestThreadIsolationWithSemaphoreSetSmallCommand> command1Ref = new AtomicReference<TestThreadIsolationWithSemaphoreSetSmallCommand>();
-        final AtomicReference<TestThreadIsolationWithSemaphoreSetSmallCommand> command2Ref = new AtomicReference<TestThreadIsolationWithSemaphoreSetSmallCommand>();
-        final AtomicReference<TestThreadIsolationWithSemaphoreSetSmallCommand> command3Ref = new AtomicReference<TestThreadIsolationWithSemaphoreSetSmallCommand>();
+        final AtomicReference<TestThreadIsolationWithSemaphoreSetSmallCommand> command1Ref = new AtomicReference<>();
+        final AtomicReference<TestThreadIsolationWithSemaphoreSetSmallCommand> command2Ref = new AtomicReference<>();
+        final AtomicReference<TestThreadIsolationWithSemaphoreSetSmallCommand> command3Ref = new AtomicReference<>();
 
-        Runnable r1 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
-
-            @Override
-            public void run() {
-                final boolean shouldExecute = count.incrementAndGet() < 3;
-                try {
-                    executionThreads.add(Thread.currentThread());
-                    TestThreadIsolationWithSemaphoreSetSmallCommand command1 = new TestThreadIsolationWithSemaphoreSetSmallCommand(2, new Action0() {
-
-                        @Override
-                        public void call() {
-                            // make sure it's deterministic and we put 2 threads into the pool before the 3rd is submitted
-                            if (shouldExecute) {
-                                try {
-                                    scheduleLatch.countDown();
-                                    successLatch.await();
-                                } catch (InterruptedException e) {
-                                }
-                            }
+        Runnable r1 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), () -> {
+            final boolean shouldExecute = count.incrementAndGet() < 3;
+            try {
+                executionThreads.add(Thread.currentThread());
+                TestThreadIsolationWithSemaphoreSetSmallCommand command1 = new TestThreadIsolationWithSemaphoreSetSmallCommand(2, () -> {
+                    // make sure it's deterministic and we put 2 threads into the pool before the 3rd is submitted
+                    if (shouldExecute) {
+                        try {
+                            scheduleLatch.countDown();
+                            successLatch.await();
+                        } catch (InterruptedException e) {
+                            // No action needed. Simply exit this method.
                         }
-
-                    });
-                    command1Ref.set(command1);
-                    results.add(command1.toObservable().map(new Func1<Boolean, Boolean>() {
-
-                        @Override
-                        public Boolean call(Boolean b) {
-                            responseThreads.add(Thread.currentThread());
-                            return b;
-                        }
-
-                    }).doAfterTerminate(new Action0() {
-
-                        @Override
-                        public void call() {
-                            if (!shouldExecute) {
-                                // the final thread that shouldn't execute releases the latch once it has run
-                                // so it is deterministic that the other two fill the thread pool until this one rejects
-                                successLatch.countDown();
-                            }
-                        }
-
-                    }).toBlocking().single());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    exceptionReceived.set(true);
-                }
+                    }
+                });
+                command1Ref.set(command1);
+                results.add(command1.toObservable().map(b -> {
+                    responseThreads.add(Thread.currentThread());
+                    return b;
+                }).doAfterTerminate(() -> {
+                    if (!shouldExecute) {
+                        // the final thread that shouldn't execute releases the latch once it has run
+                        // so it is deterministic that the other two fill the thread pool until this one rejects
+                        successLatch.countDown();
+                    }
+                }).toBlocking().single());
+            } catch (Exception e) {
+                e.printStackTrace();
+                exceptionReceived.set(true);
             }
         });
 
-        Runnable r2 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
-
-            @Override
-            public void run() {
-                final boolean shouldExecute = count.incrementAndGet() < 3;
-                try {
-                    executionThreads.add(Thread.currentThread());
-                    TestThreadIsolationWithSemaphoreSetSmallCommand command2 = new TestThreadIsolationWithSemaphoreSetSmallCommand(2, new Action0() {
-
-                        @Override
-                        public void call() {
-                            // make sure it's deterministic and we put 2 threads into the pool before the 3rd is submitted
-                            if (shouldExecute) {
-                                try {
-                                    scheduleLatch.countDown();
-                                    successLatch.await();
-                                } catch (InterruptedException e) {
-                                }
-                            }
+        Runnable r2 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), () -> {
+            final boolean shouldExecute = count.incrementAndGet() < 3;
+            try {
+                executionThreads.add(Thread.currentThread());
+                TestThreadIsolationWithSemaphoreSetSmallCommand command2 = new TestThreadIsolationWithSemaphoreSetSmallCommand(2, () -> {
+                    // make sure it's deterministic and we put 2 threads into the pool before the 3rd is submitted
+                    if (shouldExecute) {
+                        try {
+                            scheduleLatch.countDown();
+                            successLatch.await();
+                        } catch (InterruptedException e) {
+                            // No action needed. Simply exit this method.
                         }
-
-                    });
-                    command2Ref.set(command2);
-                    results.add(command2.toObservable().map(new Func1<Boolean, Boolean>() {
-
-                        @Override
-                        public Boolean call(Boolean b) {
-                            responseThreads.add(Thread.currentThread());
-                            return b;
-                        }
-
-                    }).doAfterTerminate(new Action0() {
-
-                        @Override
-                        public void call() {
-                            if (!shouldExecute) {
-                                // the final thread that shouldn't execute releases the latch once it has run
-                                // so it is deterministic that the other two fill the thread pool until this one rejects
-                                successLatch.countDown();
-                            }
-                        }
-
-                    }).toBlocking().single());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    exceptionReceived.set(true);
-                }
+                    }
+                });
+                command2Ref.set(command2);
+                results.add(command2.toObservable().map(b -> {
+                    responseThreads.add(Thread.currentThread());
+                    return b;
+                }).doAfterTerminate(() -> {
+                    if (!shouldExecute) {
+                        // the final thread that shouldn't execute releases the latch once it has run
+                        // so it is deterministic that the other two fill the thread pool until this one rejects
+                        successLatch.countDown();
+                    }
+                }).toBlocking().single());
+            } catch (Exception e) {
+                e.printStackTrace();
+                exceptionReceived.set(true);
             }
         });
 
-        Runnable r3 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
-
-            @Override
-            public void run() {
-                final boolean shouldExecute = count.incrementAndGet() < 3;
-                try {
-                    executionThreads.add(Thread.currentThread());
-                    TestThreadIsolationWithSemaphoreSetSmallCommand command3 = new TestThreadIsolationWithSemaphoreSetSmallCommand(2, new Action0() {
-
-                        @Override
-                        public void call() {
-                            // make sure it's deterministic and we put 2 threads into the pool before the 3rd is submitted
-                            if (shouldExecute) {
-                                try {
-                                    scheduleLatch.countDown();
-                                    successLatch.await();
-                                } catch (InterruptedException e) {
-                                }
-                            }
+        Runnable r3 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), () -> {
+            final boolean shouldExecute = count.incrementAndGet() < 3;
+            try {
+                executionThreads.add(Thread.currentThread());
+                TestThreadIsolationWithSemaphoreSetSmallCommand command3 = new TestThreadIsolationWithSemaphoreSetSmallCommand(2, () -> {
+                    // make sure it's deterministic and we put 2 threads into the pool before the 3rd is submitted
+                    if (shouldExecute) {
+                        try {
+                            scheduleLatch.countDown();
+                            successLatch.await();
+                        } catch (InterruptedException e) {
+                            // No action needed. Simply exit this method.
                         }
-
-                    });
-                    command3Ref.set(command3);
-                    results.add(command3.toObservable().map(new Func1<Boolean, Boolean>() {
-
-                        @Override
-                        public Boolean call(Boolean b) {
-                            responseThreads.add(Thread.currentThread());
-                            return b;
-                        }
-
-                    }).doAfterTerminate(new Action0() {
-
-                        @Override
-                        public void call() {
-                            if (!shouldExecute) {
-                                // the final thread that shouldn't execute releases the latch once it has run
-                                // so it is deterministic that the other two fill the thread pool until this one rejects
-                                successLatch.countDown();
-                            }
-                        }
-
-                    }).toBlocking().single());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    exceptionReceived.set(true);
-                }
+                    }
+                });
+                command3Ref.set(command3);
+                results.add(command3.toObservable().map(b -> {
+                    responseThreads.add(Thread.currentThread());
+                    return b;
+                }).doAfterTerminate(() -> {
+                    if (!shouldExecute) {
+                        // the final thread that shouldn't execute releases the latch once it has run
+                        // so it is deterministic that the other two fill the thread pool until this one rejects
+                        successLatch.countDown();
+                    }
+                }).toBlocking().single());
+            } catch (Exception e) {
+                e.printStackTrace();
+                exceptionReceived.set(true);
             }
         });
 
@@ -1990,16 +1823,11 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
             @Override
             protected Observable<Boolean> construct() {
-                return Observable.create(new OnSubscribe<Boolean>() {
-
-                    @Override
-                    public void call(Subscriber<? super Boolean> s) {
-                        results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
-                        results.originThread.set(Thread.currentThread());
-                        s.onNext(true);
-                        s.onCompleted();
-                    }
-
+                return Observable.create((OnSubscribe<Boolean>) s -> {
+                    results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+                    results.originThread.set(Thread.currentThread());
+                    s.onNext(true);
+                    s.onCompleted();
                 }).subscribeOn(userScheduler);
             }
 
@@ -2007,14 +1835,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         results.command = command;
 
-        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
-
-            @Override
-            public void call(Notification<? super Boolean> n) {
-                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
-                results.observeOnThread.set(Thread.currentThread());
-            }
-
+        command.toObservable().doOnEach(n -> {
+            results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+            results.observeOnThread.set(Thread.currentThread());
         }).subscribe(results.ts);
         results.ts.awaitTerminalEvent();
 
@@ -2038,15 +1861,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
             @Override
             protected Observable<Boolean> construct() {
-                return Observable.create(new OnSubscribe<Boolean>() {
-
-                    @Override
-                    public void call(Subscriber<? super Boolean> s) {
-                        results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
-                        results.originThread.set(Thread.currentThread());
-                        s.onError(new RuntimeException("graceful onError"));
-                    }
-
+                return Observable.create((OnSubscribe<Boolean>) s -> {
+                    results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+                    results.originThread.set(Thread.currentThread());
+                    s.onError(new RuntimeException("graceful onError"));
                 }).subscribeOn(userScheduler);
             }
 
@@ -2054,14 +1872,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         results.command = command;
 
-        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
-
-            @Override
-            public void call(Notification<? super Boolean> n) {
-                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
-                results.observeOnThread.set(Thread.currentThread());
-            }
-
+        command.toObservable().doOnEach(n -> {
+            results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+            results.observeOnThread.set(Thread.currentThread());
         }).subscribe(results.ts);
         results.ts.awaitTerminalEvent();
 
@@ -2085,15 +1898,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
             @Override
             protected Observable<Boolean> construct() {
-                return Observable.create(new OnSubscribe<Boolean>() {
-
-                    @Override
-                    public void call(Subscriber<? super Boolean> s) {
-                        results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
-                        results.originThread.set(Thread.currentThread());
-                        throw new RuntimeException("bad onError");
-                    }
-
+                return Observable.create((OnSubscribe<Boolean>) s -> {
+                    results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+                    results.originThread.set(Thread.currentThread());
+                    throw new RuntimeException("bad onError");
                 }).subscribeOn(userScheduler);
             }
 
@@ -2101,14 +1909,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         results.command = command;
 
-        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
-
-            @Override
-            public void call(Notification<? super Boolean> n) {
-                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
-                results.observeOnThread.set(Thread.currentThread());
-            }
-
+        command.toObservable().doOnEach(n -> {
+            results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+            results.observeOnThread.set(Thread.currentThread());
         }).subscribe(results.ts);
         results.ts.awaitTerminalEvent();
 
@@ -2132,28 +1935,16 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
             @Override
             protected Observable<Boolean> construct() {
-                return Observable.create(new OnSubscribe<Boolean>() {
-
-                    @Override
-                    public void call(Subscriber<? super Boolean> s) {
-                        s.onError(new RuntimeException("onError"));
-                    }
-
-                }).subscribeOn(userScheduler);
+                return Observable.create((OnSubscribe<Boolean>) s -> s.onError(new RuntimeException("onError"))).subscribeOn(userScheduler);
             }
 
         };
 
         results.command = command;
 
-        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
-
-            @Override
-            public void call(Notification<? super Boolean> n) {
-                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
-                results.observeOnThread.set(Thread.currentThread());
-            }
-
+        command.toObservable().doOnEach(n -> {
+            results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+            results.observeOnThread.set(Thread.currentThread());
         }).subscribe(results.ts);
         results.ts.awaitTerminalEvent();
 
@@ -2220,28 +2011,16 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
             @Override
             protected Observable<Boolean> construct() {
-                return Observable.create(new OnSubscribe<Boolean>() {
-
-                    @Override
-                    public void call(Subscriber<? super Boolean> s) {
-                        s.onError(new RuntimeException("onError"));
-                    }
-
-                }).subscribeOn(userScheduler);
+                return Observable.create((OnSubscribe<Boolean>) s -> s.onError(new RuntimeException("onError"))).subscribeOn(userScheduler);
             }
 
         };
 
         results.command = command;
 
-        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
-
-            @Override
-            public void call(Notification<? super Boolean> n) {
-                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
-                results.observeOnThread.set(Thread.currentThread());
-            }
-
+        command.toObservable().doOnEach(n -> {
+            results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+            results.observeOnThread.set(Thread.currentThread());
         }).subscribe(results.ts);
         results.ts.awaitTerminalEvent();
 
@@ -2271,28 +2050,16 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
             @Override
             protected Observable<Boolean> construct() {
-                return Observable.create(new OnSubscribe<Boolean>() {
-
-                    @Override
-                    public void call(Subscriber<? super Boolean> s) {
-                        s.onError(new RuntimeException("onError"));
-                    }
-
-                }).subscribeOn(userScheduler);
+                return Observable.create((OnSubscribe<Boolean>) s -> s.onError(new RuntimeException("onError"))).subscribeOn(userScheduler);
             }
 
         };
 
         results.command = command;
 
-        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
-
-            @Override
-            public void call(Notification<? super Boolean> n) {
-                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
-                results.observeOnThread.set(Thread.currentThread());
-            }
-
+        command.toObservable().doOnEach(n -> {
+            results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+            results.observeOnThread.set(Thread.currentThread());
         }).subscribe(results.ts);
         results.ts.awaitTerminalEvent();
 
@@ -2303,7 +2070,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         assertEquals(1, results.ts.getOnNextEvents().size());
         assertEquals(false, results.ts.getOnNextEvents().get(0));
 
-        assertTrue(command.getExecutionTimeInMilliseconds() == -1);
+        assertEquals(command.getExecutionTimeInMilliseconds(), -1);
         assertFalse(command.isSuccessfulExecution());
 
         return results;
@@ -2311,11 +2078,11 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     private final class RequestContextTestResults {
         volatile TestHystrixObservableCommand<Boolean> command;
-        final AtomicReference<Thread> originThread = new AtomicReference<Thread>();
+        final AtomicReference<Thread> originThread = new AtomicReference<>();
         final AtomicBoolean isContextInitialized = new AtomicBoolean();
-        TestSubscriber<Boolean> ts = new TestSubscriber<Boolean>();
+        TestSubscriber<Boolean> ts = new TestSubscriber<>();
         final AtomicBoolean isContextInitializedObserveOn = new AtomicBoolean();
-        final AtomicReference<Thread> observeOnThread = new AtomicReference<Thread>();
+        final AtomicReference<Thread> observeOnThread = new AtomicReference<>();
     }
 
     /* *************************************** testSuccessfulRequestContext *********************************** */
@@ -2328,10 +2095,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         RequestContextTestResults results = testRequestContextOnSuccess(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
 
         assertTrue(results.isContextInitialized.get());
-        assertTrue(results.originThread.get().equals(Thread.currentThread())); // all synchronous
+        assertEquals(results.originThread.get(), Thread.currentThread()); // all synchronous
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // all synchronous
+        assertEquals(results.observeOnThread.get(), Thread.currentThread()); // all synchronous
 
         // semaphore isolated
         assertFalse(results.command.isExecutedInThread());
@@ -2444,10 +2211,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         RequestContextTestResults results = testRequestContextOnGracefulFailure(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
 
         assertTrue(results.isContextInitialized.get());
-        assertTrue(results.originThread.get().equals(Thread.currentThread())); // all synchronous
+        assertEquals(results.originThread.get(), Thread.currentThread()); // all synchronous
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // all synchronous
+        assertEquals(results.observeOnThread.get(), Thread.currentThread()); // all synchronous
 
         // semaphore isolated
         assertFalse(results.command.isExecutedInThread());
@@ -2560,10 +2327,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         RequestContextTestResults results = testRequestContextOnBadFailure(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
 
         assertTrue(results.isContextInitialized.get());
-        assertTrue(results.originThread.get().equals(Thread.currentThread())); // all synchronous
+        assertEquals(results.originThread.get(), Thread.currentThread()); // all synchronous
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // all synchronous
+        assertEquals(results.observeOnThread.get(), Thread.currentThread()); // all synchronous
 
         // semaphore isolated
         assertFalse(results.command.isExecutedInThread());
@@ -2676,10 +2443,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         RequestContextTestResults results = testRequestContextOnFailure(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
 
         assertTrue(results.isContextInitialized.get());
-        assertTrue(results.originThread.get().equals(Thread.currentThread())); // all synchronous
+        assertEquals(results.originThread.get(), Thread.currentThread()); // all synchronous
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // all synchronous
+        assertEquals(results.observeOnThread.get(), Thread.currentThread()); // all synchronous
 
         // semaphore isolated
         assertFalse(results.command.isExecutedInThread());
@@ -2792,10 +2559,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         RequestContextTestResults results = testRequestContextOnRejection(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
 
         assertTrue(results.isContextInitialized.get());
-        assertTrue(results.originThread.get().equals(Thread.currentThread())); // all synchronous
+        assertEquals(results.originThread.get(), Thread.currentThread()); // all synchronous
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // all synchronous
+        assertEquals(results.observeOnThread.get(), Thread.currentThread()); // all synchronous
 
         // semaphore isolated
         assertFalse(results.command.isExecutedInThread());
@@ -2849,11 +2616,11 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         RequestContextTestResults results = testRequestContextOnRejection(ExecutionIsolationStrategy.THREAD, Schedulers.immediate());
 
         assertTrue(results.isContextInitialized.get());
-        assertTrue(results.originThread.get().equals(Thread.currentThread()));
+        assertEquals(results.originThread.get(), Thread.currentThread());
 
         assertTrue(results.isContextInitializedObserveOn.get());
         System.out.println("results.observeOnThread.get(): " + results.observeOnThread.get() + "  " + Thread.currentThread());
-        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // rejected so we stay on calling thread
+        assertEquals(results.observeOnThread.get(), Thread.currentThread()); // rejected so we stay on calling thread
 
         // thread isolated, but rejected, so this is false
         assertFalse(results.command.isExecutedInThread());
@@ -2909,10 +2676,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         RequestContextTestResults results = testRequestContext(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
 
         assertTrue(results.isContextInitialized.get());
-        assertTrue(results.originThread.get().equals(Thread.currentThread())); // all synchronous
+        assertEquals(results.originThread.get(), Thread.currentThread()); // all synchronous
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // all synchronous
+        assertEquals(results.observeOnThread.get(), Thread.currentThread()); // all synchronous
 
         // semaphore isolated
         assertFalse(results.command.isExecutedInThread());
@@ -2966,10 +2733,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         RequestContextTestResults results = testRequestContext(ExecutionIsolationStrategy.THREAD, Schedulers.immediate());
 
         assertTrue(results.isContextInitialized.get());
-        assertTrue(results.originThread.get().equals(Thread.currentThread()));
+        assertEquals(results.originThread.get(), Thread.currentThread());
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // rejected so we stay on calling thread
+        assertEquals(results.observeOnThread.get(), Thread.currentThread()); // rejected so we stay on calling thread
 
         // thread isolated ... but rejected so not executed in a thread
         assertFalse(results.command.isExecutedInThread());
@@ -3024,7 +2791,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             TestCommandWithMultipleValues command = new TestCommandWithMultipleValues();
             assertEquals(Arrays.asList(true, false, true), command.observe().toList().toBlocking().single());
 
-            assertEquals(null, command.getFailedExecutionException());
+            assertNull(command.getFailedExecutionException());
             assertTrue(command.getExecutionTimeInMilliseconds() > -1);
             assertTrue(command.isSuccessfulExecution());
             assertCommandExecutionEvents(command, HystrixEventType.EMIT, HystrixEventType.EMIT, HystrixEventType.EMIT, HystrixEventType.SUCCESS);
@@ -3043,7 +2810,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     public void testExecutionPartialSuccess2() {
         try {
             TestPartialSuccess command = new TestPartialSuccess();
-            TestSubscriber<Integer> ts = new TestSubscriber<Integer>();
+            TestSubscriber<Integer> ts = new TestSubscriber<>();
             command.toObservable().subscribe(ts);
             ts.awaitTerminalEvent();
             ts.assertReceivedOnNext(Arrays.asList(1, 2, 3));
@@ -3073,7 +2840,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     public void testExecutionPartialSuccess() {
         try {
             TestPartialSuccess2 command = new TestPartialSuccess2();
-            TestSubscriber<Boolean> ts = new TestSubscriber<Boolean>();
+            TestSubscriber<Boolean> ts = new TestSubscriber<>();
             command.toObservable().subscribe(ts);
             ts.awaitTerminalEvent();
             ts.assertReceivedOnNext(Arrays.asList(false, true, false, true, false, true, false));
@@ -3103,15 +2870,12 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
             @Override
             protected Observable<Boolean> construct() {
-                return Observable.defer(new Func0<Observable<Boolean>>() {
-                    @Override
-                    public Observable<Boolean> call() {
-                        try {
-                            Thread.sleep(100);
-                            return Observable.just(true);
-                        } catch (InterruptedException ex) {
-                            return Observable.error(ex);
-                        }
+                return Observable.defer(() -> {
+                    try {
+                        Thread.sleep(100);
+                        return Observable.just(true);
+                    } catch (InterruptedException ex) {
+                        return Observable.error(ex);
                     }
                 }).subscribeOn(Schedulers.io());
             }
@@ -3123,12 +2887,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         Observable<Boolean> o = cmd.toObservable();
         Subscription s = o.
-                doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        System.out.println("OnUnsubscribe");
-                        latch.countDown();
-                    }
+                doOnUnsubscribe(() -> {
+                    System.out.println("OnUnsubscribe");
+                    latch.countDown();
                 }).
                 subscribe(new Subscriber<Boolean>() {
                     @Override
@@ -3172,15 +2933,12 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
             @Override
             protected Observable<Boolean> construct() {
-                return Observable.defer(new Func0<Observable<Boolean>>() {
-                    @Override
-                    public Observable<Boolean> call() {
-                        try {
-                            Thread.sleep(100);
-                            return Observable.just(true);
-                        } catch (InterruptedException ex) {
-                            return Observable.error(ex);
-                        }
+                return Observable.defer(() -> {
+                    try {
+                        Thread.sleep(100);
+                        return Observable.just(true);
+                    } catch (InterruptedException ex) {
+                        return Observable.error(ex);
                     }
                 }).subscribeOn(Schedulers.io());
             }
@@ -3192,12 +2950,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         Observable<Boolean> o = cmd.observe();
         Subscription s = o.
-                doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        System.out.println("OnUnsubscribe");
-                        latch.countDown();
-                    }
+                doOnUnsubscribe(() -> {
+                    System.out.println("OnUnsubscribe");
+                    latch.countDown();
                 }).
                 subscribe(new Subscriber<Boolean>() {
                     @Override
@@ -3252,12 +3007,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         Observable<Boolean> o = cmd.toObservable();
         Subscription s = o.
-                doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        System.out.println("OnUnsubscribe");
-                        latch.countDown();
-                    }
+                doOnUnsubscribe(() -> {
+                    System.out.println("OnUnsubscribe");
+                    latch.countDown();
                 }).
                 subscribe(new Subscriber<Boolean>() {
                     @Override
@@ -3310,8 +3062,6 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     }
 
     private static class FlexibleTestHystrixObservableCommand  {
-        public static Integer EXECUTE_VALUE = 1;
-
         public static AbstractFlexibleTestHystrixObservableCommand from(HystrixCommandKey commandKey, ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, HystrixThreadPool threadPool, AbstractTestHystrixCommand.CacheEnabled cacheEnabled, Object value, AbstractCommand.TryableSemaphore executionSemaphore) {
             return new FlexibleTestHystrixObservableCommand2(commandKey, isolationStrategy, executionResult, executionLatency, threadPool, cacheEnabled, value, executionSemaphore);
         }
@@ -3357,39 +3107,36 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                 addLatency(executionLatency);
                 throw new HystrixBadRequestException("Execution Bad Request Exception for TestHystrixObservableCommand");
             }
-            return Observable.create(new OnSubscribe<Integer>() {
-                @Override
-                public void call(Subscriber<? super Integer> subscriber) {
-                    System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " construct() method has been subscribed to");
-                    addLatency(executionLatency);
-                    if (executionResult == AbstractTestHystrixCommand.ExecutionResult.SUCCESS) {
-                        subscriber.onNext(1);
-                        subscriber.onCompleted();
-                    } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.MULTIPLE_EMITS_THEN_SUCCESS) {
-                        subscriber.onNext(2);
-                        subscriber.onNext(3);
-                        subscriber.onNext(4);
-                        subscriber.onNext(5);
-                        subscriber.onCompleted();
-                    } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.MULTIPLE_EMITS_THEN_FAILURE) {
-                        subscriber.onNext(6);
-                        subscriber.onNext(7);
-                        subscriber.onNext(8);
-                        subscriber.onNext(9);
-                        subscriber.onError(new RuntimeException("Execution Async Failure For TestHystrixObservableCommand after 4 emits"));
-                    } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.ASYNC_FAILURE) {
-                        subscriber.onError(new RuntimeException("Execution Async Failure for TestHystrixObservableCommand after 0 emits"));
-                    } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.ASYNC_HYSTRIX_FAILURE) {
-                        subscriber.onError(new HystrixRuntimeException(HystrixRuntimeException.FailureType.COMMAND_EXCEPTION, AbstractFlexibleTestHystrixObservableCommand.class, "Execution Hystrix Failure for TestHystrixObservableCommand", new RuntimeException("Execution Failure for TestHystrixObservableCommand")));
-                    } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.ASYNC_RECOVERABLE_ERROR) {
-                        subscriber.onError(new java.lang.Error("Execution Async Error for TestHystrixObservableCommand"));
-                    } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.ASYNC_UNRECOVERABLE_ERROR) {
-                        subscriber.onError(new OutOfMemoryError("Execution Async OOME for TestHystrixObservableCommand"));
-                    } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.ASYNC_BAD_REQUEST) {
-                        subscriber.onError(new HystrixBadRequestException("Execution Async Bad Request Exception for TestHystrixObservableCommand"));
-                    } else {
-                        subscriber.onError(new RuntimeException("You passed in a executionResult enum that can't be represented in HystrixObservableCommand: " + executionResult));
-                    }
+            return Observable.create(subscriber -> {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " construct() method has been subscribed to");
+                addLatency(executionLatency);
+                if (executionResult == ExecutionResult.SUCCESS) {
+                    subscriber.onNext(1);
+                    subscriber.onCompleted();
+                } else if (executionResult == ExecutionResult.MULTIPLE_EMITS_THEN_SUCCESS) {
+                    subscriber.onNext(2);
+                    subscriber.onNext(3);
+                    subscriber.onNext(4);
+                    subscriber.onNext(5);
+                    subscriber.onCompleted();
+                } else if (executionResult == ExecutionResult.MULTIPLE_EMITS_THEN_FAILURE) {
+                    subscriber.onNext(6);
+                    subscriber.onNext(7);
+                    subscriber.onNext(8);
+                    subscriber.onNext(9);
+                    subscriber.onError(new RuntimeException("Execution Async Failure For TestHystrixObservableCommand after 4 emits"));
+                } else if (executionResult == ExecutionResult.ASYNC_FAILURE) {
+                    subscriber.onError(new RuntimeException("Execution Async Failure for TestHystrixObservableCommand after 0 emits"));
+                } else if (executionResult == ExecutionResult.ASYNC_HYSTRIX_FAILURE) {
+                    subscriber.onError(new HystrixRuntimeException(HystrixRuntimeException.FailureType.COMMAND_EXCEPTION, AbstractFlexibleTestHystrixObservableCommand.class, "Execution Hystrix Failure for TestHystrixObservableCommand", new RuntimeException("Execution Failure for TestHystrixObservableCommand")));
+                } else if (executionResult == ExecutionResult.ASYNC_RECOVERABLE_ERROR) {
+                    subscriber.onError(new Error("Execution Async Error for TestHystrixObservableCommand"));
+                } else if (executionResult == ExecutionResult.ASYNC_UNRECOVERABLE_ERROR) {
+                    subscriber.onError(new OutOfMemoryError("Execution Async OOME for TestHystrixObservableCommand"));
+                } else if (executionResult == ExecutionResult.ASYNC_BAD_REQUEST) {
+                    subscriber.onError(new HystrixBadRequestException("Execution Async Bad Request Exception for TestHystrixObservableCommand"));
+                } else {
+                    subscriber.onError(new RuntimeException("You passed in a executionResult enum that can't be represented in HystrixObservableCommand: " + executionResult));
                 }
             });
         }
@@ -3425,12 +3172,6 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     private static class FlexibleTestHystrixObservableCommand2 extends AbstractFlexibleTestHystrixObservableCommand {
         public FlexibleTestHystrixObservableCommand2(HystrixCommandKey commandKey, ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, HystrixThreadPool threadPool, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore) {
-            super(commandKey, isolationStrategy, executionResult, executionLatency, threadPool, cacheEnabled, value, executionSemaphore);
-        }
-    }
-
-    private static class FlexibleTestHystrixObservableCommand3 extends AbstractFlexibleTestHystrixObservableCommand {
-        public FlexibleTestHystrixObservableCommand3(HystrixCommandKey commandKey, ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, HystrixThreadPool threadPool, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore) {
             super(commandKey, isolationStrategy, executionResult, executionLatency, threadPool, cacheEnabled, value, executionSemaphore);
         }
     }
@@ -3484,7 +3225,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         @Override
         protected Observable<Integer> construct() {
             return Observable.just(1, 2, 3)
-                    .concatWith(Observable.<Integer> error(new RuntimeException("forced error")))
+                    .concatWith(Observable.error(new RuntimeException("forced error")))
                     .subscribeOn(Schedulers.computation());
         }
 
@@ -3496,18 +3237,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             super(TestHystrixObservableCommand.testPropsBuilder());
         }
 
-        public TestPartialSuccess2(ExecutionIsolationStrategy isolationStrategy) {
-            this(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolationStrategy));
-        }
-
-        public TestPartialSuccess2(HystrixCommandProperties.Setter properties) {
-            super(testPropsBuilder().setCommandPropertiesDefaults(properties));
-        }
-
         @Override
         protected Observable<Boolean> construct() {
             return Observable.just(false, true, false)
-                    .concatWith(Observable.<Boolean>error(new RuntimeException("forced error")))
+                    .concatWith(Observable.error(new RuntimeException("forced error")))
                     .subscribeOn(Schedulers.computation());
         }
 
@@ -3715,42 +3448,6 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     }
 
     /**
-     * A Command implementation that supports caching.
-     */
-    private static class SuccessfulCacheableCommandViaSemaphore extends TestHystrixObservableCommand<String> {
-
-        private final boolean cacheEnabled;
-        private volatile boolean executed = false;
-        private final String value;
-
-        public SuccessfulCacheableCommandViaSemaphore(boolean cacheEnabled, String value) {
-            super(testPropsBuilder()
-                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE)));
-            this.value = value;
-            this.cacheEnabled = cacheEnabled;
-        }
-
-        @Override
-        protected Observable<String> construct() {
-            executed = true;
-            System.out.println("successfully executed");
-            return Observable.just(value).subscribeOn(Schedulers.computation());
-        }
-
-        public boolean isCommandRunningInThread() {
-            return super.getProperties().executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD);
-        }
-
-        @Override
-        public String getCacheKey() {
-            if (cacheEnabled)
-                return value;
-            else
-                return null;
-        }
-    }
-
-    /**
      * A Command implementation that supports caching and execution takes a while.
      * <p>
      * Used to test scenario where Futures are returned with a backing call still executing.
@@ -3772,14 +3469,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         protected Observable<String> construct() {
             executed = true;
             return Observable.just(value).delay(duration, TimeUnit.MILLISECONDS).subscribeOn(Schedulers.computation())
-                    .doOnNext(new Action1<String>() {
-
-                        @Override
-                        public void call(String t1) {
-                            System.out.println("successfully executed");
-                        }
-
-                    });
+                    .doOnNext(t1 -> System.out.println("successfully executed"));
         }
 
         @Override
@@ -3838,24 +3528,21 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         @Override
         protected Observable<Boolean> construct() {
-            return Observable.create(new OnSubscribe<Boolean>() {
-                @Override
-                public void call(Subscriber<? super Boolean> subscriber) {
-                    try {
-                        Thread.sleep(executionSleep);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    if (resultBehavior == RESULT_SUCCESS) {
-                        subscriber.onNext(true);
-                        subscriber.onCompleted();
-                    } else if (resultBehavior == RESULT_FAILURE) {
-                        subscriber.onError(new RuntimeException("TestSemaphoreCommand failure"));
-                    } else if (resultBehavior == RESULT_BAD_REQUEST_EXCEPTION) {
-                        subscriber.onError(new HystrixBadRequestException("TestSemaphoreCommand BadRequestException"));
-                    } else {
-                        subscriber.onError(new IllegalStateException("Didn't use a proper enum for result behavior"));
-                    }
+            return Observable.create(subscriber -> {
+                try {
+                    Thread.sleep(executionSleep);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                if (resultBehavior == RESULT_SUCCESS) {
+                    subscriber.onNext(true);
+                    subscriber.onCompleted();
+                } else if (resultBehavior == RESULT_FAILURE) {
+                    subscriber.onError(new RuntimeException("TestSemaphoreCommand failure"));
+                } else if (resultBehavior == RESULT_BAD_REQUEST_EXCEPTION) {
+                    subscriber.onError(new HystrixBadRequestException("TestSemaphoreCommand BadRequestException"));
+                } else {
+                    subscriber.onError(new IllegalStateException("Didn't use a proper enum for result behavior"));
                 }
             });
         }
@@ -3883,15 +3570,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         @Override
         protected Observable<Boolean> construct() {
-            return Observable.create(new OnSubscribe<Boolean>() {
-
-                @Override
-                public void call(Subscriber<? super Boolean> s) {
-                    action.call();
-                    s.onNext(true);
-                    s.onCompleted();
-                }
-
+            return Observable.create(s -> {
+                action.call();
+                s.onNext(true);
+                s.onCompleted();
             });
         }
     }
@@ -3929,22 +3611,18 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         @Override
         protected Observable<Boolean> construct() {
-            return Observable.create(new OnSubscribe<Boolean>() {
-
-                @Override
-                public void call(Subscriber<? super Boolean> s) {
-                    //signals caller that run has started
-                    startLatch.countDown();
-                    try {
-                        // waits for caller to countDown latch
-                        waitLatch.await();
-                        s.onNext(true);
-                        s.onCompleted();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        s.onNext(false);
-                        s.onCompleted();
-                    }
+            return Observable.create((OnSubscribe<Boolean>) s -> {
+                //signals caller that run has started
+                startLatch.countDown();
+                try {
+                    // waits for caller to countDown latch
+                    waitLatch.await();
+                    s.onNext(true);
+                    s.onCompleted();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    s.onNext(false);
+                    s.onCompleted();
                 }
             }).subscribeOn(Schedulers.computation());
         }
@@ -3965,58 +3643,18 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         @Override
         protected Observable<Boolean> construct() {
-            return Observable.create(new OnSubscribe<Boolean>() {
-
-                @Override
-                public void call(Subscriber<? super Boolean> s) {
-                    try {
-                        Thread.sleep(executionSleep);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    s.onNext(true);
-                    s.onCompleted();
+            return Observable.create((OnSubscribe<Boolean>) s -> {
+                try {
+                    Thread.sleep(executionSleep);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
 
+                s.onNext(true);
+                s.onCompleted();
             }).subscribeOn(Schedulers.io());
         }
 
-    }
-
-    private static class InterruptibleCommand extends TestHystrixObservableCommand<Boolean> {
-
-        public InterruptibleCommand(boolean shouldInterrupt) {
-            super(testPropsBuilder()
-                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()));
-        }
-
-        private volatile boolean hasBeenInterrupted;
-
-        public boolean hasBeenInterrupted()
-        {
-            return hasBeenInterrupted;
-        }
-
-        @Override
-        protected Observable<Boolean> construct() {
-            return Observable.defer(new Func0<Observable<Boolean>>() {
-                @Override
-                public Observable<Boolean> call() {
-                    try {
-                        Thread.sleep(1000);
-                    }
-                    catch (InterruptedException e) {
-                        System.out.println("Interrupted!");
-                        e.printStackTrace();
-                        hasBeenInterrupted = true;
-                    }
-
-                    return Observable.just(hasBeenInterrupted);
-                }
-            }).subscribeOn(Schedulers.io());
-
-        }
     }
 
     private static class RequestCacheThreadRejection extends TestHystrixObservableCommand<Boolean> {

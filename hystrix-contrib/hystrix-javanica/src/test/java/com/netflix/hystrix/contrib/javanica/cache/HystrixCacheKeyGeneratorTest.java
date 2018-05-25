@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,7 +55,6 @@ public class HystrixCacheKeyGeneratorTest {
         User user = new User();
         user.setId(id);
         user.setProfile(null);
-        String expectedKey = id;
         MetaHolder metaHolder = MetaHolder.builder()
                 .method(TestCacheClass.class.getMethod("cacheResultMethod", String.class, User.class))
                 .args(new Object[]{id, user})
@@ -65,7 +64,7 @@ public class HystrixCacheKeyGeneratorTest {
         // when
         String actual = keyGenerator.generateCacheKey(context).getCacheKey();
         // then
-        assertEquals(expectedKey, actual);
+        assertEquals(id, actual);
     }
 
     @Test

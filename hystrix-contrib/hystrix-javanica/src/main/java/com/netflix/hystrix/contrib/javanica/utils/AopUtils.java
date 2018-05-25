@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,6 @@
 package com.netflix.hystrix.contrib.javanica.utils;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import org.apache.commons.lang3.Validate;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -86,10 +85,8 @@ public final class AopUtils {
             if (superclass != null) {
                 method = getDeclaredMethod(superclass, methodName, parameterTypes);
             }
-        } catch (ClassNotFoundException e) {
-            Throwables.propagate(e);
-        } catch (IOException e) {
-            Throwables.propagate(e);
+        } catch (ClassNotFoundException | IOException e) {
+            throw new RuntimeException(e);
         }
         return method;
     }

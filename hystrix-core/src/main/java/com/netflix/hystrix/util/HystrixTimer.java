@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,7 +63,7 @@ public class HystrixTimer {
         }
     }
 
-    /* package */ AtomicReference<ScheduledExecutor> executor = new AtomicReference<ScheduledExecutor>();
+    /* package */ AtomicReference<ScheduledExecutor> executor = new AtomicReference<>();
 
     /**
      * Add a {@link TimerListener} that will be executed until it is garbage collected or removed by clearing the returned {@link Reference}.
@@ -90,15 +90,11 @@ public class HystrixTimer {
         startThreadIfNeeded();
         // add the listener
 
-        Runnable r = new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    listener.tick();
-                } catch (Exception e) {
-                    logger.error("Failed while ticking TimerListener", e);
-                }
+        Runnable r = () -> {
+            try {
+                listener.tick();
+            } catch (Exception e) {
+                logger.error("Failed while ticking TimerListener", e);
             }
         };
 
@@ -181,7 +177,7 @@ public class HystrixTimer {
         }
     }
 
-    public static interface TimerListener {
+    public interface TimerListener {
 
         /**
          * The 'tick' is called each time the interval occurs.
@@ -192,12 +188,12 @@ public class HystrixTimer {
          * <p>
          * If you need a ThreadLocal set, you can store the state in the TimerListener, then when tick() is called, set the ThreadLocal to your desired value.
          */
-        public void tick();
+        void tick();
 
         /**
          * How often this TimerListener should 'tick' defined in milliseconds.
          */
-        public int getIntervalTimeInMilliseconds();
+        int getIntervalTimeInMilliseconds();
     }
 
 }

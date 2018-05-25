@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,7 +45,7 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
     private final AtomicBoolean batchStarted = new AtomicBoolean();
 
     private final ConcurrentMap<RequestArgumentType, CollapsedRequest<ResponseType, RequestArgumentType>> argumentMap =
-            new ConcurrentHashMap<RequestArgumentType, CollapsedRequest<ResponseType, RequestArgumentType>>();
+            new ConcurrentHashMap<>();
     private final HystrixCollapserProperties properties;
 
     private ReentrantReadWriteLock batchLock = new ReentrantReadWriteLock();
@@ -79,9 +79,9 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                     return null;
                 } else {
                     CollapsedRequestSubject<ResponseType, RequestArgumentType> collapsedRequest =
-                            new CollapsedRequestSubject<ResponseType, RequestArgumentType>(arg, this);
+                            new CollapsedRequestSubject<>(arg, this);
                     final CollapsedRequestSubject<ResponseType, RequestArgumentType> existing = (CollapsedRequestSubject<ResponseType, RequestArgumentType>) argumentMap.putIfAbsent(arg, collapsedRequest);
-                    /**
+                    /*
                      * If the argument already exists in the batch, then there are 2 options:
                      * A) If request caching is ON (the default): only keep 1 argument in the batch and let all responses
                      * be hooked up to that argument
@@ -268,7 +268,7 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                         } catch (Exception e) {
                             logger.debug("Failed to setException on CollapsedRequestFutureImpl instances.", e);
                         }
-                        /**
+                        /*
                          * https://github.com/Netflix/Hystrix/issues/78 Include more info when collapsed requests remain in queue
                          */
                         logger.warn("Request still in queue but not be executed due to RequestCollapser shutdown. Argument => " + request.getArgument() + "   Request Object => " + request, new IllegalStateException());

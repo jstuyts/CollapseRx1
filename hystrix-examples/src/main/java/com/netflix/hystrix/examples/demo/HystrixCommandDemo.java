@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,7 +45,7 @@ public class HystrixCommandDemo {
      * 
      * Use CallerRunsPolicy so we can just keep iterating and adding to it and it will block when full.
      */
-    private final ThreadPoolExecutor pool = new ThreadPoolExecutor(5, 5, 5, TimeUnit.DAYS, new SynchronousQueue<Runnable>(), new ThreadPoolExecutor.CallerRunsPolicy());
+    private final ThreadPoolExecutor pool = new ThreadPoolExecutor(5, 5, 5, TimeUnit.DAYS, new SynchronousQueue<>(), new ThreadPoolExecutor.CallerRunsPolicy());
 
     public void startDemo() {
         while (true) {
@@ -54,20 +54,15 @@ public class HystrixCommandDemo {
     }
 
     public void runSimulatedRequestOnThread() {
-        pool.execute(new Runnable() {
-
-            @Override
-            public void run() {
-                HystrixRequestContext context = HystrixRequestContext.initializeContext();
-                try {
-                    executeSimulatedUserRequestForOrderConfirmationAndCreditCardPayment();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    context.shutdown();
-                }
+        pool.execute(() -> {
+            HystrixRequestContext context = HystrixRequestContext.initializeContext();
+            try {
+                executeSimulatedUserRequestForOrderConfirmationAndCreditCardPayment();
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                context.shutdown();
             }
-
         });
     }
 

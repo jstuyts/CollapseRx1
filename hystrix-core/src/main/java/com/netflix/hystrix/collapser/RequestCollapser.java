@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,20 +15,18 @@
  */
 package com.netflix.hystrix.collapser;
 
-import java.lang.ref.Reference;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import rx.Observable;
-
 import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextCallable;
 import com.netflix.hystrix.util.HystrixTimer.TimerListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
+
+import java.lang.ref.Reference;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Requests are submitted to this and batches executed based on size or time. Scoped to either a request or the global application.
@@ -45,8 +43,8 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
 
     private final HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser;
     // batch can be null once shutdown
-    private final AtomicReference<RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>> batch = new AtomicReference<RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>>();
-    private final AtomicReference<Reference<TimerListener>> timerListenerReference = new AtomicReference<Reference<TimerListener>>();
+    private final AtomicReference<RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>> batch = new AtomicReference<>();
+    private final AtomicReference<Reference<TimerListener>> timerListenerReference = new AtomicReference<>();
     private final AtomicBoolean timerListenerRegistered = new AtomicBoolean();
     private final CollapserTimer timer;
     private final HystrixCollapserProperties properties;
@@ -63,7 +61,7 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
         this.concurrencyStrategy = concurrencyStrategy;
         this.properties = properties;
         this.timer = timer;
-        batch.set(new RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>(properties, commandCollapser, properties.maxRequestsInBatch().get()));
+        batch.set(new RequestBatch<>(properties, commandCollapser, properties.maxRequestsInBatch().get()));
     }
 
     /**
@@ -110,7 +108,7 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
         if (previousBatch == null) {
             throw new IllegalStateException("Trying to start null batch which means it was shutdown already.");
         }
-        if (batch.compareAndSet(previousBatch, new RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>(properties, commandCollapser, properties.maxRequestsInBatch().get()))) {
+        if (batch.compareAndSet(previousBatch, new RequestBatch<>(properties, commandCollapser, properties.maxRequestsInBatch().get()))) {
             // this thread won so trigger the previous batch
             previousBatch.executeBatchIfNotAlreadyStarted();
         }
@@ -140,29 +138,24 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
         CollapsedTask() {
             // this gets executed from the context of a HystrixCommand parent thread (such as a Tomcat thread)
             // so we create the callable now where we can capture the thread context
-            callableWithContextOfParent = new HystrixContextCallable<Void>(concurrencyStrategy, new Callable<Void>() {
-                // the wrapCallable call allows a strategy to capture thread-context if desired
-
-                @Override
-                public Void call() throws Exception {
-                    try {
-                        // we fetch current so that when multiple threads race
-                        // we can do compareAndSet with the expected/new to ensure only one happens
-                        RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> currentBatch = batch.get();
-                        // 1) it can be null if it got shutdown
-                        // 2) we don't execute this batch if it has no requests and let it wait until next tick to be executed
-                        if (currentBatch != null && currentBatch.getSize() > 0) {
-                            // do execution within context of wrapped Callable
-                            createNewBatchAndExecutePreviousIfNeeded(currentBatch);
-                        }
-                    } catch (Throwable t) {
-                        logger.error("Error occurred trying to execute the batch.", t);
-                        t.printStackTrace();
-                        // ignore error so we don't kill the Timer mainLoop and prevent further items from being scheduled
+            // the wrapCallable call allows a strategy to capture thread-context if desired
+            callableWithContextOfParent = new HystrixContextCallable<>(concurrencyStrategy, () -> {
+                try {
+                    // we fetch current so that when multiple threads race
+                    // we can do compareAndSet with the expected/new to ensure only one happens
+                    RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> currentBatch = batch.get();
+                    // 1) it can be null if it got shutdown
+                    // 2) we don't execute this batch if it has no requests and let it wait until next tick to be executed
+                    if (currentBatch != null && currentBatch.getSize() > 0) {
+                        // do execution within context of wrapped Callable
+                        createNewBatchAndExecutePreviousIfNeeded(currentBatch);
                     }
-                    return null;
+                } catch (Throwable t) {
+                    logger.error("Error occurred trying to execute the batch.", t);
+                    t.printStackTrace();
+                    // ignore error so we don't kill the Timer mainLoop and prevent further items from being scheduled
                 }
-
+                return null;
             });
         }
 

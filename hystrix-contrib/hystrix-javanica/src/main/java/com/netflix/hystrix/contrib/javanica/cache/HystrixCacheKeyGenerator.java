@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -70,7 +70,7 @@ public class HystrixCacheKeyGenerator {
         }
     }
 
-    private Object appendPropertyValue(StringBuilder cacheKeyBuilder, List<String> names, Object obj) throws HystrixCacheKeyGenerationException {
+    private void appendPropertyValue(StringBuilder cacheKeyBuilder, List<String> names, Object obj) throws HystrixCacheKeyGenerationException {
         for (String name : names) {
             if (obj != null) {
                 obj = getPropertyValue(name, obj);
@@ -79,18 +79,13 @@ public class HystrixCacheKeyGenerator {
         if (obj != null) {
             cacheKeyBuilder.append(obj);
         }
-        return obj;
     }
 
     private Object getPropertyValue(String name, Object obj) throws HystrixCacheKeyGenerationException {
         try {
             return new PropertyDescriptor(name, obj.getClass())
                     .getReadMethod().invoke(obj);
-        } catch (IllegalAccessException e) {
-            throw new HystrixCacheKeyGenerationException(e);
-        } catch (IntrospectionException e) {
-            throw new HystrixCacheKeyGenerationException(e);
-        } catch (InvocationTargetException e) {
+        } catch (IllegalAccessException | IntrospectionException | InvocationTargetException e) {
             throw new HystrixCacheKeyGenerationException(e);
         }
     }

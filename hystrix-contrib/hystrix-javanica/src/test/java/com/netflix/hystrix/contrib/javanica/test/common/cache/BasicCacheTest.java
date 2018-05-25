@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.test.common.cache;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey;
@@ -43,7 +42,7 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
     private UserService userService;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         userService = createUserService();
     }
 
@@ -154,7 +153,7 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
     public void testGetUser_givenWrongCacheKeyMethodReturnType_shouldThrowException() {
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
-            User user = userService.getUserByName("name");
+            userService.getUserByName("name");
         } finally {
             context.shutdown();
         }
@@ -164,14 +163,14 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
     public void testGetUserByName_givenNonexistentCacheKeyMethod_shouldThrowException() {
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
-            User user = userService.getUser();
+            userService.getUser();
         } finally {
             context.shutdown();
         }
     }
 
     public static class UserService {
-        private Map<String, User> storage = new ConcurrentHashMap<String, User>();
+        private Map<String, User> storage = new ConcurrentHashMap<>();
 
         @PostConstruct
         public void init() {
@@ -207,12 +206,7 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
         @CacheResult(cacheKeyMethod = "getUserByEmailCacheKey")
         @HystrixCommand
         public User getUserByEmail(final String email) {
-            return Iterables.tryFind(storage.values(), new Predicate<User>() {
-                @Override
-                public boolean apply(User input) {
-                    return input.getProfile().getEmail().equalsIgnoreCase(email);
-                }
-            }).orNull();
+            return Iterables.tryFind(storage.values(), input -> input.getProfile().getEmail().equalsIgnoreCase(email)).orNull();
         }
 
         private String getUserByEmailCacheKey(String email) {

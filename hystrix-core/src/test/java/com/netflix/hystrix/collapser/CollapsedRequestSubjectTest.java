@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,21 +15,19 @@
  */
 package com.netflix.hystrix.collapser;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import org.junit.Test;
+import rx.Observable;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.junit.Test;
-
-import rx.Observable;
+import static org.junit.Assert.*;
 
 public class CollapsedRequestSubjectTest {
     @Test
     public void testSetResponseSuccess() throws InterruptedException, ExecutionException {
-        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
+        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
 
@@ -41,19 +39,19 @@ public class CollapsedRequestSubjectTest {
 
     @Test
     public void testSetNullResponseSuccess() throws InterruptedException, ExecutionException {
-        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
+        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
 
         cr.setResponse(null);
 
         // fetch value
-        assertEquals(null, v.get());
+        assertNull(v.get());
     }
 
     @Test
-    public void testSetException() throws InterruptedException, ExecutionException {
-        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
+    public void testSetException() throws InterruptedException {
+        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
 
@@ -70,7 +68,7 @@ public class CollapsedRequestSubjectTest {
 
     @Test
     public void testSetExceptionAfterResponse() throws InterruptedException, ExecutionException {
-        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
+        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
 
@@ -80,15 +78,15 @@ public class CollapsedRequestSubjectTest {
             cr.setException(new RuntimeException("anException"));
             fail("expected IllegalState");
         } catch (IllegalStateException e) {
-
+            // No action needed. This is the expected case.
         }
 
         assertEquals("theResponse", v.get());
     }
 
     @Test
-    public void testSetResponseAfterException() throws InterruptedException, ExecutionException {
-        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
+    public void testSetResponseAfterException() throws InterruptedException {
+        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
 
@@ -98,7 +96,7 @@ public class CollapsedRequestSubjectTest {
             cr.setResponse("theResponse");
             fail("expected IllegalState");
         } catch (IllegalStateException e) {
-
+            // No action needed. This is the expected case.
         }
 
         try {
@@ -111,7 +109,7 @@ public class CollapsedRequestSubjectTest {
 
     @Test
     public void testSetResponseDuplicate() throws InterruptedException, ExecutionException {
-        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
+        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
 
@@ -121,7 +119,7 @@ public class CollapsedRequestSubjectTest {
             cr.setResponse("theResponse2");
             fail("expected IllegalState");
         } catch (IllegalStateException e) {
-
+            // No action needed. This is the expected case.
         }
 
         assertEquals("theResponse", v.get());
@@ -129,7 +127,7 @@ public class CollapsedRequestSubjectTest {
 
     @Test(expected = CancellationException.class)
     public void testSetResponseAfterUnsubscribe() throws InterruptedException, ExecutionException {
-        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
+        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> f = o.toBlocking().toFuture();
 
@@ -148,7 +146,7 @@ public class CollapsedRequestSubjectTest {
 
     @Test(expected = CancellationException.class)
     public void testSetExceptionAfterUnsubscribe() throws InterruptedException, ExecutionException {
-        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
+        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> f = o.toBlocking().toFuture();
 
@@ -167,7 +165,7 @@ public class CollapsedRequestSubjectTest {
 
     @Test
     public void testUnsubscribeAfterSetResponse() throws InterruptedException, ExecutionException {
-        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
+        CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
 

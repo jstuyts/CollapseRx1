@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,11 +16,7 @@
 package com.netflix.hystrix;
 
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
-import com.netflix.hystrix.collapser.CollapserTimer;
-import com.netflix.hystrix.collapser.HystrixCollapserBridge;
-import com.netflix.hystrix.collapser.RealCollapserTimer;
-import com.netflix.hystrix.collapser.RequestCollapser;
-import com.netflix.hystrix.collapser.RequestCollapserFactory;
+import com.netflix.hystrix.collapser.*;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
@@ -31,9 +27,6 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscription;
-import rx.functions.Action0;
-import rx.functions.Action1;
-import rx.functions.Func0;
 import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
@@ -79,7 +72,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * <li>GLOBAL: Requests from any thread (ie. all HTTP requests) within the JVM will be collapsed. 1 queue for entire app.</li>
      * </ul>
      */
-    public static enum Scope implements RequestCollapserFactory.Scope {
+    public enum Scope implements RequestCollapserFactory.Scope {
         REQUEST, GLOBAL
     }
 
@@ -120,20 +113,19 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         }
 
         HystrixCollapserProperties properties = HystrixPropertiesFactory.getCollapserProperties(collapserKey, propertiesBuilder);
-        this.collapserFactory = new RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType>(collapserKey, scope, timer, properties);
+        this.collapserFactory = new RequestCollapserFactory<>(collapserKey, scope, timer, properties);
         this.requestCache = HystrixRequestCache.getInstance(collapserKey, HystrixPlugins.getInstance().getConcurrencyStrategy());
 
         final HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> self = this;
 
-        /**
+        /*
          * Used to pass public method invocation to the underlying implementation in a separate package while leaving the methods 'protected' in this class.
          */
         collapserInstanceWrapper = new HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType>() {
 
             @Override
             public Collection<Collection<CollapsedRequest<ResponseType, RequestArgumentType>>> shardRequests(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
-                Collection<Collection<CollapsedRequest<ResponseType, RequestArgumentType>>> shards = self.shardRequests(requests);
-                return shards;
+                return self.shardRequests(requests);
             }
 
             @Override
@@ -147,12 +139,9 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
             @Override
             public Observable<Void> mapResponseToRequests(Observable<BatchReturnType> batchResponse, final Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
-                return batchResponse.single().doOnNext(new Action1<BatchReturnType>() {
-                    @Override
-                    public void call(BatchReturnType batchReturnType) {
-                        // this is a blocking call in HystrixCollapser
-                        self.mapResponseToRequests(batchReturnType, requests);
-                    }
+                return batchResponse.single().doOnNext(batchReturnType -> {
+                    // this is a blocking call in HystrixCollapser
+                    self.mapResponseToRequests(batchReturnType, requests);
                 }).ignoreElements().cast(Void.class);
             }
 
@@ -314,12 +303,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         // eagerly kick off subscription
         final Subscription underlyingSubscription = toObservable().subscribe(subject);
         // return the subject that can be subscribed to later while the execution has already started
-        return subject.doOnUnsubscribe(new Action0() {
-            @Override
-            public void call() {
-                underlyingSubscription.unsubscribe();
-            }
-        });
+        return subject.doOnUnsubscribe(underlyingSubscription::unsubscribe);
     }
 
     /**
@@ -354,35 +338,32 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      *         {@link #mapResponseToRequests} to transform the {@code <BatchReturnType>} into {@code <ResponseType>}
      */
     public Observable<ResponseType> toObservable(Scheduler observeOn) {
-        return Observable.defer(new Func0<Observable<ResponseType>>() {
-            @Override
-            public Observable<ResponseType> call() {
-                final boolean isRequestCacheEnabled = getProperties().requestCacheEnabled().get();
-                final String cacheKey = getCacheKey();
+        return Observable.defer(() -> {
+            final boolean isRequestCacheEnabled = getProperties().requestCacheEnabled().get();
+            final String cacheKey = getCacheKey();
 
-                /* try from cache first */
-                if (isRequestCacheEnabled) {
-                    HystrixCachedObservable<ResponseType> fromCache = requestCache.get(cacheKey);
-                    if (fromCache != null) {
-                        return fromCache.toObservable();
-                    }
+            /* try from cache first */
+            if (isRequestCacheEnabled) {
+                HystrixCachedObservable<ResponseType> fromCache = requestCache.get(cacheKey);
+                if (fromCache != null) {
+                    return fromCache.toObservable();
                 }
-
-                RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> requestCollapser = collapserFactory.getRequestCollapser(collapserInstanceWrapper);
-                Observable<ResponseType> response = requestCollapser.submitRequest(getRequestArgument());
-
-                if (isRequestCacheEnabled && cacheKey != null) {
-                    HystrixCachedObservable<ResponseType> toCache = HystrixCachedObservable.from(response);
-                    HystrixCachedObservable<ResponseType> fromCache = requestCache.putIfAbsent(cacheKey, toCache);
-                    if (fromCache == null) {
-                        return toCache.toObservable();
-                    } else {
-                        toCache.unsubscribe();
-                        return fromCache.toObservable();
-                    }
-                }
-                return response;
             }
+
+            RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> requestCollapser = collapserFactory.getRequestCollapser(collapserInstanceWrapper);
+            Observable<ResponseType> response = requestCollapser.submitRequest(getRequestArgument());
+
+            if (isRequestCacheEnabled && cacheKey != null) {
+                HystrixCachedObservable<ResponseType> toCache = HystrixCachedObservable.from(response);
+                HystrixCachedObservable<ResponseType> fromCache = requestCache.putIfAbsent(cacheKey, toCache);
+                if (fromCache == null) {
+                    return toCache.toObservable();
+                } else {
+                    toCache.unsubscribe();
+                    return fromCache.toObservable();
+                }
+            }
+            return response;
         });
     }
 
@@ -586,6 +567,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
     // on the repetitive string processing that will occur on the same classes over and over again
     @SuppressWarnings("rawtypes")
-    private static ConcurrentHashMap<Class<? extends HystrixCollapser>, String> defaultNameCache = new ConcurrentHashMap<Class<? extends HystrixCollapser>, String>();
+    private static ConcurrentHashMap<Class<? extends HystrixCollapser>, String> defaultNameCache = new ConcurrentHashMap<>();
 
 }

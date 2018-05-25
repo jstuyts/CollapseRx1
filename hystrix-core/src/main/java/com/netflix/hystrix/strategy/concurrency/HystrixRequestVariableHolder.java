@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +15,10 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Factory that encompasses functionality of {@link HystrixRequestVariable} for internal Hystrix code.
@@ -36,7 +36,7 @@ public class HystrixRequestVariableHolder<T> {
 
     static final Logger logger = LoggerFactory.getLogger(HystrixRequestVariableHolder.class);
 
-    private static ConcurrentHashMap<RVCacheKey, HystrixRequestVariable<?>> requestVariableInstance = new ConcurrentHashMap<RVCacheKey, HystrixRequestVariable<?>>();
+    private static ConcurrentHashMap<RVCacheKey, HystrixRequestVariable<?>> requestVariableInstance = new ConcurrentHashMap<>();
 
     private final HystrixRequestVariableLifecycle<T> lifeCycleMethods;
 

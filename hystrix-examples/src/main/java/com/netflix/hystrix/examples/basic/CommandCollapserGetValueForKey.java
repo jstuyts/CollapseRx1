@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -70,7 +70,7 @@ public class CommandCollapserGetValueForKey extends HystrixCollapser<List<String
 
         @Override
         protected List<String> run() {
-            ArrayList<String> response = new ArrayList<String>();
+            ArrayList<String> response = new ArrayList<>();
             for (CollapsedRequest<String, Integer> request : requests) {
                 // artificial response for each argument received in the batch
                 response.add("ValueForKey: " + request.getArgument());

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,17 +15,10 @@
  */
 package com.netflix.hystrix.strategy.properties;
 
-import java.util.concurrent.ConcurrentHashMap;
-
-import com.netflix.hystrix.HystrixCollapserKey;
-import com.netflix.hystrix.HystrixCollapserProperties;
-import com.netflix.hystrix.HystrixCommand;
-import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixCommandProperties;
-import com.netflix.hystrix.HystrixThreadPool;
-import com.netflix.hystrix.HystrixThreadPoolKey;
-import com.netflix.hystrix.HystrixThreadPoolProperties;
+import com.netflix.hystrix.*;
 import com.netflix.hystrix.strategy.HystrixPlugins;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Factory for retrieving properties implementations.
@@ -47,15 +40,15 @@ public class HystrixPropertiesFactory {
     }
 
     // String is CommandKey.name() (we can't use CommandKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private static final ConcurrentHashMap<String, HystrixCommandProperties> commandProperties = new ConcurrentHashMap<String, HystrixCommandProperties>();
+    private static final ConcurrentHashMap<String, HystrixCommandProperties> commandProperties = new ConcurrentHashMap<>();
 
     /**
      * Get an instance of {@link HystrixCommandProperties} with the given factory {@link HystrixPropertiesStrategy} implementation for each {@link HystrixCommand} instance.
      * 
      * @param key
-     *            Pass-thru to {@link HystrixPropertiesStrategy#getCommandProperties} implementation.
+     *            Pass-through to {@link HystrixPropertiesStrategy#getCommandProperties} implementation.
      * @param builder
-     *            Pass-thru to {@link HystrixPropertiesStrategy#getCommandProperties} implementation.
+     *            Pass-through to {@link HystrixPropertiesStrategy#getCommandProperties} implementation.
      * @return {@link HystrixCommandProperties} instance
      */
     public static HystrixCommandProperties getCommandProperties(HystrixCommandKey key, HystrixCommandProperties.Setter builder) {
@@ -86,15 +79,15 @@ public class HystrixPropertiesFactory {
     }
 
     // String is ThreadPoolKey.name() (we can't use ThreadPoolKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private static final ConcurrentHashMap<String, HystrixThreadPoolProperties> threadPoolProperties = new ConcurrentHashMap<String, HystrixThreadPoolProperties>();
+    private static final ConcurrentHashMap<String, HystrixThreadPoolProperties> threadPoolProperties = new ConcurrentHashMap<>();
 
     /**
      * Get an instance of {@link HystrixThreadPoolProperties} with the given factory {@link HystrixPropertiesStrategy} implementation for each {@link HystrixThreadPool} instance.
      * 
      * @param key
-     *            Pass-thru to {@link HystrixPropertiesStrategy#getThreadPoolProperties} implementation.
+     *            Pass-through to {@link HystrixPropertiesStrategy#getThreadPoolProperties} implementation.
      * @param builder
-     *            Pass-thru to {@link HystrixPropertiesStrategy#getThreadPoolProperties} implementation.
+     *            Pass-through to {@link HystrixPropertiesStrategy#getThreadPoolProperties} implementation.
      * @return {@link HystrixThreadPoolProperties} instance
      */
     public static HystrixThreadPoolProperties getThreadPoolProperties(HystrixThreadPoolKey key, HystrixThreadPoolProperties.Setter builder) {
@@ -125,15 +118,15 @@ public class HystrixPropertiesFactory {
     }
 
     // String is CollapserKey.name() (we can't use CollapserKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private static final ConcurrentHashMap<String, HystrixCollapserProperties> collapserProperties = new ConcurrentHashMap<String, HystrixCollapserProperties>();
+    private static final ConcurrentHashMap<String, HystrixCollapserProperties> collapserProperties = new ConcurrentHashMap<>();
 
     /**
      * Get an instance of {@link HystrixCollapserProperties} with the given factory {@link HystrixPropertiesStrategy} implementation for each {@link HystrixCollapserKey} instance.
      * 
      * @param key
-     *            Pass-thru to {@link HystrixPropertiesStrategy#getCollapserProperties} implementation.
+     *            Pass-through to {@link HystrixPropertiesStrategy#getCollapserProperties} implementation.
      * @param builder
-     *            Pass-thru to {@link HystrixPropertiesStrategy#getCollapserProperties} implementation.
+     *            Pass-through to {@link HystrixPropertiesStrategy#getCollapserProperties} implementation.
      * @return {@link HystrixCollapserProperties} instance
      */
     public static HystrixCollapserProperties getCollapserProperties(HystrixCollapserKey key, HystrixCollapserProperties.Setter builder) {

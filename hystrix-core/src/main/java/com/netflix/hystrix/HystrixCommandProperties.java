@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,7 +54,7 @@ public abstract class HystrixCommandProperties {
      * <li>SEMAPHORE: Execute the {@link HystrixCommand#run()} method on the calling thread and restrict concurrent executions using the semaphore permit count.</li>
      * </ul>
      */
-    public static enum ExecutionIsolationStrategy {
+    public enum ExecutionIsolationStrategy {
         THREAD, SEMAPHORE
     }
 
@@ -185,15 +185,8 @@ public abstract class HystrixCommandProperties {
             parseProperty();
 
             // use a callback to handle changes so we only handle the parse cost on updates rather than every fetch
-            property.addCallback(new Runnable() {
-
-                @Override
-                public void run() {
-                    // when the property value changes we'll update the value
-                    parseProperty();
-                }
-
-            });
+            // when the property value changes we'll update the value
+            property.addCallback(this::parseProperty);
         }
 
         @Override

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ import com.netflix.hystrix.HystrixCommandProperties;
 import java.math.BigDecimal;
 import java.net.HttpCookie;
 
-/**
+/*
  * This class was originally taken from a functional example using the Authorize.net API
  * but was modified for this example to use mock classes so that the real API does not need
  * to be depended upon and so that a backend account with Authorize.net is not needed.
@@ -86,7 +86,7 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
         }
 
         // perform credit card transaction
-        Result<Transaction> result = gateway.submit(
+        Result result = gateway.submit(
         );
 
         if (result.isApproved()) {
@@ -108,7 +108,7 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
             }
             // handle all other errors
             return CreditCardAuthorizationResult.createFailedResponse(result.getReasonResponseCode() + " : " + result.getResponseText());
-            /**
+            /*
              * NOTE that in this use case we do not throw an exception for an "error" as this type of error from the service is not a system error,
              * but a legitimate usage problem successfully delivered back from the service.
              * 
@@ -131,7 +131,7 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
 
         }
 
-        public Result<Transaction> submit() {
+        public Result submit() {
             /* simulate varying length of time 800-1500ms which is typical for a credit card transaction */
             try {
                 Thread.sleep((int) (Math.random() * 700) + 800);
@@ -140,15 +140,15 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
             }
 
             if (Math.random() < 0.8) {
-                return new Result<Transaction>(true);
+                return new Result(true);
             } else {
-                return new Result<Transaction>(false);
+                return new Result(false);
             }
 
         }
     }
 
-    public static class Result<T> {
+    public static class Result {
 
         private final boolean approved;
 
@@ -197,13 +197,4 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
         }
 
     }
-
-    public static class Transaction {
-
-    }
-
-    public static enum TransactionType {
-        AUTH_CAPTURE
-    }
-
 }

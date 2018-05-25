@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,26 +16,22 @@
 package com.netflix.hystrix;
 
 public interface InspectableBuilder {
-    public TestCommandBuilder getBuilder();
+    TestCommandBuilder getBuilder();
 
-    public enum CommandKeyForUnitTest implements HystrixCommandKey {
+    enum CommandKeyForUnitTest implements HystrixCommandKey {
         KEY_ONE, KEY_TWO
     }
 
-    public enum CommandGroupForUnitTest implements HystrixCommandGroupKey {
-        OWNER_ONE, OWNER_TWO
+    enum CommandGroupForUnitTest implements HystrixCommandGroupKey {
+        OWNER_ONE
     }
 
-    public enum ThreadPoolKeyForUnitTest implements HystrixThreadPoolKey {
-        THREAD_POOL_ONE, THREAD_POOL_TWO
-    }
-
-    public static class TestCommandBuilder {
+    class TestCommandBuilder {
         HystrixCommandGroupKey owner = CommandGroupForUnitTest.OWNER_ONE;
         HystrixCommandKey dependencyKey = null;
         HystrixThreadPoolKey threadPoolKey = null;
         HystrixThreadPool threadPool = null;
-        HystrixCommandProperties.Setter commandPropertiesDefaults = HystrixCommandPropertiesTest.getUnitTestPropertiesSetter();
+        HystrixCommandProperties.Setter commandPropertiesDefaults;
         HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults = HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder();
         AbstractCommand.TryableSemaphore executionSemaphore = null;
         TestableExecutionHook executionHook = new TestableExecutionHook();
@@ -78,11 +74,5 @@ public interface InspectableBuilder {
             this.executionSemaphore = executionSemaphore;
             return this;
         }
-
-        TestCommandBuilder setExecutionHook(TestableExecutionHook executionHook) {
-            this.executionHook = executionHook;
-            return this;
-        }
-
     }
 }

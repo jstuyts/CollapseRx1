@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ import java.util.ServiceLoader;
  * SPI allows for varying configuration sources.
  * 
  * The HystrixPlugin singleton will load only one implementation of this SPI
- * throught the {@link ServiceLoader} mechanism.
+ * through the {@link ServiceLoader} mechanism.
  * 
  * @author agentgt
  *
@@ -35,33 +35,33 @@ public interface HystrixDynamicProperties {
      * @param fallback default value, maybe <code>null</code>
      * @return never <code>null</code>
      */
-    public HystrixDynamicProperty<String> getString(String name, String fallback);
+    HystrixDynamicProperty<String> getString(String name, String fallback);
     /**
      * Requests a property that may or may not actually exist.
      * @param name property name, never <code>null</code>
      * @param fallback default value, maybe <code>null</code>
      * @return never <code>null</code>
      */
-    public HystrixDynamicProperty<Integer> getInteger(String name, Integer fallback);
+    HystrixDynamicProperty<Integer> getInteger(String name, Integer fallback);
     /**
      * Requests a property that may or may not actually exist.
      * @param name property name, never <code>null</code>
      * @param fallback default value, maybe <code>null</code>
      * @return never <code>null</code>
      */
-    public HystrixDynamicProperty<Long> getLong(String name, Long fallback);
+    HystrixDynamicProperty<Long> getLong(String name, Long fallback);
     /**
      * Requests a property that may or may not actually exist.
      * @param name property name
      * @param fallback default value
      * @return never <code>null</code>
      */
-    public HystrixDynamicProperty<Boolean> getBoolean(String name, Boolean fallback);
+    HystrixDynamicProperty<Boolean> getBoolean(String name, Boolean fallback);
     
     /**
      * @ExcludeFromJavadoc
      */
-    public static class Util {
+    class Util {
         /**
          * A convenience method to get a property by type (Class).
          * @param properties never <code>null</code>

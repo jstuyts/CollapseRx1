@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,12 +49,12 @@ public enum HystrixEventType {
     /**
      * List of events that throw an Exception to the caller
      */
-    public final static List<HystrixEventType> EXCEPTION_PRODUCING_EVENT_TYPES = new ArrayList<HystrixEventType>();
+    public final static List<HystrixEventType> EXCEPTION_PRODUCING_EVENT_TYPES = new ArrayList<>();
 
     /**
      * List of events that are terminal
      */
-    public final static List<HystrixEventType> TERMINAL_EVENT_TYPES = new ArrayList<HystrixEventType>();
+    public final static List<HystrixEventType> TERMINAL_EVENT_TYPES = new ArrayList<>();
 
     static {
         EXCEPTION_PRODUCING_EVENT_TYPES.add(BAD_REQUEST);
@@ -81,6 +81,6 @@ public enum HystrixEventType {
     }
 
     public enum Collapser {
-        BATCH_EXECUTED, ADDED_TO_BATCH, RESPONSE_FROM_CACHE;
+        BATCH_EXECUTED, ADDED_TO_BATCH, RESPONSE_FROM_CACHE
     }
 }

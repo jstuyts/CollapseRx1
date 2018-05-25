@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2017 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +20,8 @@ import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -39,7 +41,7 @@ public class UnsubscribedTasksRequestCacheTest {
     public class CommandExecutionHook extends HystrixCommandExecutionHook {
 
         @Override
-        public <T> Exception onError(HystrixInvokable<T> commandInstance, HystrixRuntimeException.FailureType failureType, Exception e) {
+        public Exception onError(HystrixInvokable commandInstance, HystrixRuntimeException.FailureType failureType, Exception e) {
             e.printStackTrace();
             encounteredCommandException.set(true);
             return e;
@@ -58,12 +60,6 @@ public class UnsubscribedTasksRequestCacheTest {
         @Override
         protected Boolean run() {
             numOfExecutions.getAndIncrement();
-            try {
-                Thread.sleep(500);
-            }
-            catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             System.out.println(Thread.currentThread().getName() + " run()");
             return value == 0 || value % 2 == 0;
         }
@@ -74,6 +70,16 @@ public class UnsubscribedTasksRequestCacheTest {
         }
     }
 
+    @Before
+    public void init() {
+        HystrixPlugins.reset();
+    }
+
+    @After
+    public void reset() {
+        HystrixPlugins.reset();
+    }
+
     @Test
     public void testOneCommandIsUnsubscribed() throws ExecutionException, InterruptedException {
 
@@ -81,63 +87,41 @@ public class UnsubscribedTasksRequestCacheTest {
         final HystrixRequestContext context = HystrixRequestContext.initializeContext();
         final AtomicInteger numCacheResponses = new AtomicInteger(0);
 
-
         try {
-            ExecutorService executorService = Executors.newFixedThreadPool(2);
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-            Future futureCommand2a = executorService.submit(new Runnable() {
-
-                public void run() {
-
-                    HystrixRequestContext.setContextOnCurrentThread(context);
-
-                    CommandUsingRequestCache command2a = new CommandUsingRequestCache(2);
-                    Future<Boolean> resultCommand2a = command2a.queue();
-
-                    try {
-                        assertTrue(resultCommand2a.get());
-                        System.out.println(Thread.currentThread() + " " + command2a.isResponseFromCache());
-                        if (command2a.isResponseFromCache()) {
-                            numCacheResponses.getAndIncrement();
-                        }
-                    } catch (Exception e) {
-                        fail("Exception: " + e.getMessage());
-                    }
-                }
-            });
-
-            Future futureCommand2b = executorService.submit(new Runnable() {
-
-                public void run() {
-
-                    HystrixRequestContext.setContextOnCurrentThread(context);
-
-                    CommandUsingRequestCache command2b = new CommandUsingRequestCache(2);
-                    Future<Boolean> resultCommand2b = command2b.queue();
-
-                    try {
-                        assertTrue(resultCommand2b.get());
-                        System.out.println(Thread.currentThread() + " " + command2b.isResponseFromCache());
-                        if (command2b.isResponseFromCache()) {
-                            numCacheResponses.getAndIncrement();
-                        }
-                    } catch (Exception e) {
-                        fail("Exception: " + e.getMessage());
-                    }
-                }
-            });
+            Future futureCommand2a = executorService.submit(createCommandRunnable(context, numCacheResponses));
+            Future futureCommand2b = executorService.submit(createCommandRunnable(context, numCacheResponses));
 
             futureCommand2a.get();
-            Thread.sleep(500);
             futureCommand2b.get();
 
             assertEquals(1, numCacheResponses.get());
             assertEquals(1, numOfExecutions.get());
-            assertEquals(false, encounteredCommandException.get());
-
+            assertFalse(encounteredCommandException.get());
         } finally {
             context.shutdown();
         }
+    }
+
+    private Runnable createCommandRunnable(final HystrixRequestContext context, final AtomicInteger numCacheResponses) {
+        return () -> {
+
+            HystrixRequestContext.setContextOnCurrentThread(context);
+
+            CommandUsingRequestCache command2a = new CommandUsingRequestCache(2);
+            Future<Boolean> resultCommand2a = command2a.queue();
+
+            try {
+                assertTrue(resultCommand2a.get());
+                System.out.println(Thread.currentThread() + " " + command2a.isResponseFromCache());
+                if (command2a.isResponseFromCache()) {
+                    numCacheResponses.getAndIncrement();
+                }
+            } catch (Exception e) {
+                fail("Exception: " + e.getMessage());
+            }
+        };
     }
 
 }

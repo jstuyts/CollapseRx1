@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,7 +44,7 @@ public class CacheInvocationContextFactory {
         if (method.isAnnotationPresent(CacheResult.class)) {
             CacheResult cacheResult = method.getAnnotation(CacheResult.class);
             MethodExecutionAction cacheKeyMethod = createCacheKeyAction(cacheResult.cacheKeyMethod(), metaHolder);
-            return new CacheInvocationContext<CacheResult>(cacheResult, cacheKeyMethod, metaHolder.getObj(), method, metaHolder.getArgs());
+            return new CacheInvocationContext<>(cacheResult, cacheKeyMethod, metaHolder.getObj(), method, metaHolder.getArgs());
         }
         return null;
     }
@@ -60,7 +60,7 @@ public class CacheInvocationContextFactory {
         if (method.isAnnotationPresent(CacheRemove.class)) {
             CacheRemove cacheRemove = method.getAnnotation(CacheRemove.class);
             MethodExecutionAction cacheKeyMethod = createCacheKeyAction(cacheRemove.cacheKeyMethod(), metaHolder);
-            return new CacheInvocationContext<CacheRemove>(cacheRemove, cacheKeyMethod, metaHolder.getObj(), method, metaHolder.getArgs());
+            return new CacheInvocationContext<>(cacheRemove, cacheKeyMethod, metaHolder.getObj(), method, metaHolder.getArgs());
         }
         return null;
     }

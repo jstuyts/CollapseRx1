@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,6 @@ package com.netflix.hystrix;
 /**
  * Marker interface for Hystrix commands that can be invoked.
  */
-public interface HystrixInvokable<R> {
+public interface HystrixInvokable {
 
 }

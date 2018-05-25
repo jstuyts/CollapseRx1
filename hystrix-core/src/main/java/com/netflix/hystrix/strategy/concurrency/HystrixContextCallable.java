@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +15,9 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
-import java.util.concurrent.Callable;
-
 import com.netflix.hystrix.strategy.HystrixPlugins;
+
+import java.util.concurrent.Callable;
 
 /**
  * Wrapper around {@link Callable} that manages the {@link HystrixRequestContext} initialization and cleanup for the execution of the {@link Callable}

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,7 +42,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
     private static final Map<String, User> USERS;
 
     static {
-        USERS = new HashMap<String, User>();
+        USERS = new HashMap<>();
         USERS.put("1", new User("1", "user_1"));
         USERS.put("2", new User("2", "user_2"));
         USERS.put("3", new User("3", "user_3"));
@@ -56,7 +56,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
     protected abstract UserService createUserService();
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         MockitoAnnotations.initMocks(this);
         userService = createUserService();
         userService.setFailoverService(failoverService);
@@ -91,11 +91,8 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
     }
 
     @Test(expected = RuntimeOperationException.class)
-    public void testBlockUser() throws NotFoundException, ActivationException, OperationException {
-        try {
-            userService.blockUser("1"); // this method always throws ActivationException
-        } finally {
-        }
+    public void testBlockUser() throws NotFoundException, OperationException {
+        userService.blockUser("1"); // this method always throws ActivationException
     }
 
     @Test(expected = NotFoundException.class)
@@ -115,7 +112,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
         } catch (UserException e) {
             assertEquals(1, e.level);
         } catch (Throwable e) {
-            assertTrue("'UserException' is expected exception.", false);
+            fail("'UserException' is expected exception.");
         }
     }
 
@@ -126,7 +123,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
         } catch (UserException e) {
             assertEquals(2, e.level);
         } catch (Throwable e) {
-            assertTrue("'UserException' is expected exception.", false);
+            fail("'UserException' is expected exception.");
         }
     }
 
@@ -142,7 +139,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
 
 
         } catch (Throwable e) {
-            assertTrue("'HystrixFlowException' is expected exception.", false);
+            fail("'HystrixFlowException' is expected exception.");
         }
     }
 
@@ -153,7 +150,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
         } catch (HystrixRuntimeException e) {
             assertEquals(TimeoutException.class, e.getCause().getClass());
         } catch (Throwable e) {
-            assertTrue("'HystrixRuntimeException' is expected exception.", false);
+            fail("'HystrixRuntimeException' is expected exception.");
         }
     }
 
@@ -184,10 +181,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
 
     public static class UserService {
 
-        private FailoverService failoverService;
-
         public void setFailoverService(FailoverService failoverService) {
-            this.failoverService = failoverService;
         }
 
         @HystrixCommand

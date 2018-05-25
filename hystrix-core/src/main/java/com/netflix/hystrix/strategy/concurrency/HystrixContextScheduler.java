@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2013 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,16 +15,20 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
-import java.util.concurrent.*;
-
-import rx.*;
+import com.netflix.hystrix.HystrixThreadPool;
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import rx.Scheduler;
+import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Func0;
 import rx.internal.schedulers.ScheduledAction;
-import rx.subscriptions.*;
+import rx.subscriptions.CompositeSubscription;
+import rx.subscriptions.Subscriptions;
 
-import com.netflix.hystrix.HystrixThreadPool;
-import com.netflix.hystrix.strategy.HystrixPlugins;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Wrap a {@link Scheduler} so that scheduled actions are wrapped with {@link HystrixContexSchedulerAction} so that
@@ -49,12 +53,7 @@ public class HystrixContextScheduler extends Scheduler {
     }
 
     public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, HystrixThreadPool threadPool) {
-        this(concurrencyStrategy, threadPool, new Func0<Boolean>() {
-            @Override
-            public Boolean call() {
-                return true;
-            }
-        });
+        this(concurrencyStrategy, threadPool, () -> true);
     }
 
     public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, HystrixThreadPool threadPool, Func0<Boolean> shouldInterruptThread) {

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,9 +41,5 @@ abstract public class TestHystrixCommand<T> extends HystrixCommand<T> implements
 
     static TestCommandBuilder testPropsBuilder() {
         return new TestCommandBuilder(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD);
-    }
-
-    static TestCommandBuilder testPropsBuilder(HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
-        return new TestCommandBuilder(isolationStrategy);
     }
 }

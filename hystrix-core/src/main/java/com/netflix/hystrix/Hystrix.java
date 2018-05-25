@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -69,15 +69,10 @@ public class Hystrix {
         HystrixCollapser.reset();
         HystrixPlugins.reset();
         HystrixPropertiesFactory.reset();
-        currentCommand.set(new ConcurrentStack<HystrixCommandKey>());
+        currentCommand.set(new ConcurrentStack<>());
     }
 
-    private static ThreadLocal<ConcurrentStack<HystrixCommandKey>> currentCommand = new ThreadLocal<ConcurrentStack<HystrixCommandKey>>() {
-        @Override
-        protected ConcurrentStack<HystrixCommandKey> initialValue() {
-            return new ConcurrentStack<HystrixCommandKey>();
-        }
-    };
+    private static ThreadLocal<ConcurrentStack<HystrixCommandKey>> currentCommand = ThreadLocal.withInitial(ConcurrentStack::new);
 
     /**
      * Allows a thread to query whether it's current point of execution is within the scope of a HystrixCommand.
@@ -107,14 +102,7 @@ public class Hystrix {
         } catch (Exception e) {
             logger.warn("Unable to record command starting", e);
         }
-        return new Action0() {
-
-            @Override
-            public void call() {
-                endCurrentThreadExecutingCommand(list);
-            }
-
-        };
+        return () -> endCurrentThreadExecutingCommand(list);
     }
 
     private static void endCurrentThreadExecutingCommand(ConcurrentStack<HystrixCommandKey> list) {
@@ -139,10 +127,10 @@ public class Hystrix {
      * @param <E>
      */
     private static class ConcurrentStack<E> {
-        AtomicReference<Node<E>> top = new AtomicReference<Node<E>>();
+        AtomicReference<Node<E>> top = new AtomicReference<>();
 
         public void push(E item) {
-            Node<E> newHead = new Node<E>(item);
+            Node<E> newHead = new Node<>(item);
             Node<E> oldHead;
             do {
                 oldHead = top.get();
@@ -150,17 +138,16 @@ public class Hystrix {
             } while (!top.compareAndSet(oldHead, newHead));
         }
 
-        public E pop() {
+        public void pop() {
             Node<E> oldHead;
             Node<E> newHead;
             do {
                 oldHead = top.get();
                 if (oldHead == null) {
-                    return null;
+                    return;
                 }
                 newHead = oldHead.next;
             } while (!top.compareAndSet(oldHead, newHead));
-            return oldHead.item;
         }
 
         public boolean isEmpty() {

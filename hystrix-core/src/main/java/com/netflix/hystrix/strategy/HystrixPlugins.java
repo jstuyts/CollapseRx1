@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,13 +46,13 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class HystrixPlugins {
     
-    //We should not load unless we are requested to. This avoids accidental initialization. @agentgt
+    //We should not load unless we are requested to. This avoids accidental initialization.
     //See https://en.wikipedia.org/wiki/Initialization-on-demand_holder_idiom
     private static class LazyHolder { private static final HystrixPlugins INSTANCE = HystrixPlugins.create(); }
     private final ClassLoader classLoader;
-    /* package */ final AtomicReference<HystrixConcurrencyStrategy> concurrencyStrategy = new AtomicReference<HystrixConcurrencyStrategy>();
-    /* package */ final AtomicReference<HystrixPropertiesStrategy> propertiesFactory = new AtomicReference<HystrixPropertiesStrategy>();
-    /* package */ final AtomicReference<HystrixCommandExecutionHook> commandExecutionHook = new AtomicReference<HystrixCommandExecutionHook>();
+    /* package */ final AtomicReference<HystrixConcurrencyStrategy> concurrencyStrategy = new AtomicReference<>();
+    /* package */ final AtomicReference<HystrixPropertiesStrategy> propertiesFactory = new AtomicReference<>();
+    /* package */ final AtomicReference<HystrixCommandExecutionHook> commandExecutionHook = new AtomicReference<>();
     private final HystrixDynamicProperties dynamicProperties;
 
     
@@ -60,7 +60,7 @@ public class HystrixPlugins {
         //This will load Archaius if its in the classpath.
         this.classLoader = classLoader;
         //N.B. Do not use a logger before this is loaded as it will most likely load the configuration system.
-        //The configuration system may need to do something prior to loading logging. @agentgt
+        //The configuration system may need to do something prior to loading logging.
         dynamicProperties = resolveDynamicProperties(classLoader, logSupplier);
     }
 
@@ -77,12 +77,7 @@ public class HystrixPlugins {
      * @ExcludeFromJavadoc
      */
     /* private */ static HystrixPlugins create(ClassLoader classLoader) {
-        return new HystrixPlugins(classLoader, new LoggerSupplier() {
-            @Override
-            public Logger getLogger() {
-                return LoggerFactory.getLogger(HystrixPlugins.class);
-            }
-        });
+        return new HystrixPlugins(classLoader, () -> LoggerFactory.getLogger(HystrixPlugins.class));
     }
     /**
      * @ExcludeFromJavadoc

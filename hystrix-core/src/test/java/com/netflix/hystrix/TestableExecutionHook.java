@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,8 +29,8 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
     }
 
     StringBuilder executionSequence = new StringBuilder();
-    List<Notification<?>> commandEmissions = new ArrayList<Notification<?>>();
-    List<Notification<?>> executionEmissions = new ArrayList<Notification<?>>();
+    List<Notification<?>> commandEmissions = new ArrayList<>();
+    List<Notification<?>> executionEmissions = new ArrayList<>();
 
     public boolean commandEmissionsMatch(int numOnNext, int numOnError, int numOnCompleted) {
         return eventsMatch(commandEmissions, numOnNext, numOnError, numOnCompleted);
@@ -101,79 +101,79 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
     }
 
     @Override
-    public <T> void onStart(HystrixInvokable<T> commandInstance) {
+    public void onStart(HystrixInvokable commandInstance) {
         super.onStart(commandInstance);
         recordHookCall(executionSequence, "onStart");
     }
 
     @Override
-    public <T> T onEmit(HystrixInvokable<T> commandInstance, T value) {
+    public <T> T onEmit(HystrixInvokable commandInstance, T value) {
         commandEmissions.add(Notification.createOnNext(value));
         recordHookCall(executionSequence, "onEmit");
         return super.onEmit(commandInstance, value);
     }
 
     @Override
-    public <T> Exception onError(HystrixInvokable<T> commandInstance, FailureType failureType, Exception e) {
+    public Exception onError(HystrixInvokable commandInstance, FailureType failureType, Exception e) {
         commandEmissions.add(Notification.createOnError(e));
         recordHookCall(executionSequence, "onError");
         return super.onError(commandInstance, failureType, e);
     }
 
     @Override
-    public <T> void onSuccess(HystrixInvokable<T> commandInstance) {
+    public void onSuccess(HystrixInvokable commandInstance) {
         commandEmissions.add(Notification.createOnCompleted());
         recordHookCall(executionSequence, "onSuccess");
         super.onSuccess(commandInstance);
     }
 
     @Override
-    public <T> void onThreadStart(HystrixInvokable<T> commandInstance) {
+    public void onThreadStart(HystrixInvokable commandInstance) {
         super.onThreadStart(commandInstance);
         recordHookCall(executionSequence, "onThreadStart");
     }
 
     @Override
-    public <T> void onThreadComplete(HystrixInvokable<T> commandInstance) {
+    public void onThreadComplete(HystrixInvokable commandInstance) {
         super.onThreadComplete(commandInstance);
         recordHookCall(executionSequence, "onThreadComplete");
     }
 
     @Override
-    public <T> void onExecutionStart(HystrixInvokable<T> commandInstance) {
+    public void onExecutionStart(HystrixInvokable commandInstance) {
         recordHookCall(executionSequence, "onExecutionStart");
         super.onExecutionStart(commandInstance);
     }
 
     @Override
-    public <T> T onExecutionEmit(HystrixInvokable<T> commandInstance, T value) {
+    public <T> T onExecutionEmit(HystrixInvokable commandInstance, T value) {
         executionEmissions.add(Notification.createOnNext(value));
         recordHookCall(executionSequence, "onExecutionEmit");
         return super.onExecutionEmit(commandInstance, value);
     }
 
     @Override
-    public <T> Exception onExecutionError(HystrixInvokable<T> commandInstance, Exception e) {
+    public Exception onExecutionError(HystrixInvokable commandInstance, Exception e) {
         executionEmissions.add(Notification.createOnError(e));
         recordHookCall(executionSequence, "onExecutionError");
         return super.onExecutionError(commandInstance, e);
     }
 
     @Override
-    public <T> void onExecutionSuccess(HystrixInvokable<T> commandInstance) {
+    public void onExecutionSuccess(HystrixInvokable commandInstance) {
         executionEmissions.add(Notification.createOnCompleted());
         recordHookCall(executionSequence, "onExecutionSuccess");
         super.onExecutionSuccess(commandInstance);
     }
 
     @Override
-    public <T> void onCacheHit(HystrixInvokable<T> commandInstance) {
+    public void onCacheHit(HystrixInvokable commandInstance) {
         super.onCacheHit(commandInstance);
         recordHookCall(executionSequence, "onCacheHit");
     }
 
     @Override
-    public <T> void onUnsubscribe(HystrixInvokable<T> commandInstance) {
+    public void onUnsubscribe(HystrixInvokable commandInstance) {
         super.onUnsubscribe(commandInstance);
         recordHookCall(executionSequence, "onUnsubscribe");
     }

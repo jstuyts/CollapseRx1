@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +15,10 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Default implementation of {@link HystrixRequestVariable}. Similar to {@link ThreadLocal} but scoped at the user request level. Context is managed via {@link HystrixRequestContext}.
@@ -93,7 +93,7 @@ public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<
          * Whichever instance of LazyInitializer succeeds will then have get() invoked which will call
          * the initialValue() method once-and-only-once.
          */
-        LazyInitializer<T> l = new LazyInitializer<T>(this);
+        LazyInitializer<T> l = new LazyInitializer<>(this);
         LazyInitializer<?> existing = variableMap.putIfAbsent(this, l);
         if (existing == null) {
             /*
@@ -132,7 +132,7 @@ public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<
      *            the value to set
      */
     public void set(T value) {
-        HystrixRequestContext.getContextForCurrentThread().state.put(this, new LazyInitializer<T>(this, value));
+        HystrixRequestContext.getContextForCurrentThread().state.put(this, new LazyInitializer<>(this, value));
     }
 
     /**

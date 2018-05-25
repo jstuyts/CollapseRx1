@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
     private GenericService<String, Long, User> genericUserService;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         userService = createUserService();
         advancedUserService = createAdvancedUserServiceService();
         genericUserService = createGenericUserService();
@@ -51,17 +51,17 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
     @Test
     public void testGetUserSync() {
         User u1 = userService.getUserSync("1", "name: ");
-        assertGetUserSnycCommandExecuted(u1);
+        assertGetUserSyncCommandExecuted(u1);
     }
 
     @Test
     public void shouldWorkWithInheritedMethod() {
         User u1 = advancedUserService.getUserSync("1", "name: ");
-        assertGetUserSnycCommandExecuted(u1);
+        assertGetUserSyncCommandExecuted(u1);
     }
 
     @Test
-    public void should_work_with_parameterized_method() throws Exception {
+    public void should_work_with_parameterized_method() {
         assertEquals(Integer.valueOf(1), userService.echo(1));
     }
 
@@ -77,7 +77,7 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
     }
 
 
-    private void assertGetUserSnycCommandExecuted(User u1) {
+    private void assertGetUserSyncCommandExecuted(User u1) {
         assertEquals("name: 1", u1.getName());
     }
 
@@ -86,17 +86,10 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
     protected abstract GenericService<String, Long, User> createGenericUserService();
 
     public interface GenericService<K1, K2, V> {
-        V getByKey(K1 key1, K2 key2);
         V getByKeyForceFail(K1 key, K2 key2);
     }
 
     public static class GenericUserService implements GenericService<String, Long, User> {
-
-        @HystrixCommand
-        @Override
-        public User getByKey(String sKey, Long lKey) {
-            return new User(sKey, "name: " + lKey); // it should be network call
-        }
 
         @HystrixCommand
         @Override

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2013 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,11 +42,12 @@ import rx.subjects.ReplaySubject;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-/* package */abstract class AbstractCommand<R> implements HystrixInvokableInfo<R>, HystrixObservable<R> {
+/* package */abstract class AbstractCommand<R> implements HystrixInvokableInfo, HystrixObservable<R> {
     private static final Logger logger = LoggerFactory.getLogger(AbstractCommand.class);
     protected final HystrixThreadPool threadPool;
     protected final HystrixThreadPoolKey threadPoolKey;
@@ -72,11 +73,11 @@ import java.util.concurrent.atomic.AtomicReference;
     /* EXECUTION Semaphore */
     protected final TryableSemaphore executionSemaphoreOverride;
     /* each circuit has a semaphore to restrict concurrent execution */
-    protected static final ConcurrentHashMap<String, TryableSemaphore> executionSemaphorePerCircuit = new ConcurrentHashMap<String, TryableSemaphore>();
+    protected static final ConcurrentHashMap<String, TryableSemaphore> executionSemaphorePerCircuit = new ConcurrentHashMap<>();
     /* END EXECUTION Semaphore */
 
-    protected AtomicReference<CommandState> commandState = new AtomicReference<CommandState>(CommandState.NOT_STARTED);
-    protected AtomicReference<ThreadState> threadState = new AtomicReference<ThreadState>(ThreadState.NOT_USING_THREAD);
+    protected AtomicReference<CommandState> commandState = new AtomicReference<>(CommandState.NOT_STARTED);
+    protected AtomicReference<ThreadState> threadState = new AtomicReference<>(ThreadState.NOT_USING_THREAD);
 
     /*
      * {@link ExecutionResult} refers to what happened as the user-provided code ran.  If request-caching is used,
@@ -104,7 +105,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
     // on the repetitive string processing that will occur on the same classes over and over again
-    private static ConcurrentHashMap<Class<?>, String> defaultNameCache = new ConcurrentHashMap<Class<?>, String>();
+    private static ConcurrentHashMap<Class<?>, String> defaultNameCache = new ConcurrentHashMap<>();
 
     /* package */static String getDefaultNameFromClass(Class<?> cls) {
         String fromCache = defaultNameCache.get(cls);
@@ -237,12 +238,7 @@ import java.util.concurrent.atomic.AtomicReference;
         // eagerly kick off subscription
         final Subscription sourceSubscription = toObservable().subscribe(subject);
         // return the subject that can be subscribed to later while the execution has already started
-        return subject.doOnUnsubscribe(new Action0() {
-            @Override
-            public void call() {
-                sourceSubscription.unsubscribe();
-            }
-        });
+        return subject.doOnUnsubscribe(sourceSubscription::unsubscribe);
     }
 
     protected abstract Observable<R> getExecutionObservable();
@@ -273,136 +269,115 @@ import java.util.concurrent.atomic.AtomicReference;
 
         //doOnCompleted handler already did all of the SUCCESS work
         //doOnError handler already did all of the FAILURE/REJECTION/BAD_REQUEST work
-        final Action0 terminateCommandCleanup = new Action0() {
-
-            @Override
-            public void call() {
-                if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.TERMINAL)) {
-                    handleCommandEnd(); //user code never ran
-                } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.TERMINAL)) {
-                    handleCommandEnd(); //user code did run
-                }
+        final Action0 terminateCommandCleanup = () -> {
+            if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.TERMINAL)) {
+                handleCommandEnd(); //user code never ran
+            } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.TERMINAL)) {
+                handleCommandEnd(); //user code did run
             }
         };
 
         //mark the command as CANCELLED and store the latency (in addition to standard cleanup)
-        final Action0 unsubscribeCommandCleanup = new Action0() {
-            @Override
-            public void call() {
-                if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
-                    if (!_cmd.executionResult.containsTerminalEvent()) {
-                        try {
-                            executionHook.onUnsubscribe(_cmd);
-                        } catch (Throwable hookEx) {
-                            logger.warn("Error calling HystrixCommandExecutionHook.onUnsubscribe", hookEx);
-                        }
-                        _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
-                                .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+        final Action0 unsubscribeCommandCleanup = () -> {
+            if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
+                if (!_cmd.executionResult.containsTerminalEvent()) {
+                    try {
+                        executionHook.onUnsubscribe(_cmd);
+                    } catch (Throwable hookEx) {
+                        logger.warn("Error calling HystrixCommandExecutionHook.onUnsubscribe", hookEx);
                     }
-                    handleCommandEnd(); //user code never ran
-                } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) {
-                    if (!_cmd.executionResult.containsTerminalEvent()) {
-                        try {
-                            executionHook.onUnsubscribe(_cmd);
-                        } catch (Throwable hookEx) {
-                            logger.warn("Error calling HystrixCommandExecutionHook.onUnsubscribe", hookEx);
-                        }
-                        _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
-                                .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
-                    }
-                    handleCommandEnd(); //user code did run
+                    _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
+                            .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
                 }
+                handleCommandEnd(); //user code never ran
+            } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) {
+                if (!_cmd.executionResult.containsTerminalEvent()) {
+                    try {
+                        executionHook.onUnsubscribe(_cmd);
+                    } catch (Throwable hookEx) {
+                        logger.warn("Error calling HystrixCommandExecutionHook.onUnsubscribe", hookEx);
+                    }
+                    _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
+                            .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+                }
+                handleCommandEnd(); //user code did run
             }
         };
 
-        final Func0<Observable<R>> applyHystrixSemantics = new Func0<Observable<R>>() {
-            @Override
-            public Observable<R> call() {
-                if (commandState.get().equals(CommandState.UNSUBSCRIBED)) {
-                    return Observable.never();
-                }
-                return applyHystrixSemantics(_cmd);
+        final Func0<Observable<R>> applyHystrixSemantics = () -> {
+            if (commandState.get().equals(CommandState.UNSUBSCRIBED)) {
+                return Observable.never();
+            }
+            return applyHystrixSemantics(_cmd);
+        };
+
+        final Func1<R, R> wrapWithAllOnNextHooks = afterFirstApplication -> {
+            try {
+                return executionHook.onEmit(_cmd, afterFirstApplication);
+            } catch (Throwable hookEx) {
+                logger.warn("Error calling HystrixCommandExecutionHook.onEmit", hookEx);
+                return afterFirstApplication;
             }
         };
 
-        final Func1<R, R> wrapWithAllOnNextHooks = new Func1<R, R>() {
-            @Override
-            public R call(R r) {
-                R afterFirstApplication = r;
-
-                try {
-                    return executionHook.onEmit(_cmd, afterFirstApplication);
-                } catch (Throwable hookEx) {
-                    logger.warn("Error calling HystrixCommandExecutionHook.onEmit", hookEx);
-                    return afterFirstApplication;
-                }
+        final Action0 fireOnCompletedHook = () -> {
+            try {
+                executionHook.onSuccess(_cmd);
+            } catch (Throwable hookEx) {
+                logger.warn("Error calling HystrixCommandExecutionHook.onSuccess", hookEx);
             }
         };
 
-        final Action0 fireOnCompletedHook = new Action0() {
-            @Override
-            public void call() {
-                try {
-                    executionHook.onSuccess(_cmd);
-                } catch (Throwable hookEx) {
-                    logger.warn("Error calling HystrixCommandExecutionHook.onSuccess", hookEx);
+        return Observable.defer(() -> {
+             /* this is a stateful object so can only be used once */
+            if (!commandState.compareAndSet(CommandState.NOT_STARTED, CommandState.OBSERVABLE_CHAIN_CREATED)) {
+                IllegalStateException ex = new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
+                //TODO make a new error type for this
+                throw new HystrixRuntimeException(FailureType.BAD_REQUEST_EXCEPTION, _cmd.getClass(), getLogMessagePrefix() + " command executed multiple times - this is not permitted.", ex);
+            }
+
+            commandStartTimestamp = System.currentTimeMillis();
+
+            final boolean requestCacheEnabled = isRequestCachingEnabled();
+            final String cacheKey = getCacheKey();
+
+            /* try from cache first */
+            if (requestCacheEnabled) {
+                HystrixCommandResponseFromCache<R> fromCache = (HystrixCommandResponseFromCache<R>) requestCache.get(cacheKey);
+                if (fromCache != null) {
+                    isResponseFromCache = true;
+                    return handleRequestCacheHitAndEmitValues(fromCache);
                 }
             }
-        };
 
-        return Observable.defer(new Func0<Observable<R>>() {
-            @Override
-            public Observable<R> call() {
-                 /* this is a stateful object so can only be used once */
-                if (!commandState.compareAndSet(CommandState.NOT_STARTED, CommandState.OBSERVABLE_CHAIN_CREATED)) {
-                    IllegalStateException ex = new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
-                    //TODO make a new error type for this
-                    throw new HystrixRuntimeException(FailureType.BAD_REQUEST_EXCEPTION, _cmd.getClass(), getLogMessagePrefix() + " command executed multiple times - this is not permitted.", ex);
-                }
+            Observable<R> hystrixObservable =
+                    Observable.defer(applyHystrixSemantics)
+                            .map(wrapWithAllOnNextHooks);
 
-                commandStartTimestamp = System.currentTimeMillis();
+            Observable<R> afterCache;
 
-                final boolean requestCacheEnabled = isRequestCachingEnabled();
-                final String cacheKey = getCacheKey();
-
-                /* try from cache first */
-                if (requestCacheEnabled) {
-                    HystrixCommandResponseFromCache<R> fromCache = (HystrixCommandResponseFromCache<R>) requestCache.get(cacheKey);
-                    if (fromCache != null) {
-                        isResponseFromCache = true;
-                        return handleRequestCacheHitAndEmitValues(fromCache);
-                    }
-                }
-
-                Observable<R> hystrixObservable =
-                        Observable.defer(applyHystrixSemantics)
-                                .map(wrapWithAllOnNextHooks);
-
-                Observable<R> afterCache;
-
-                // put in cache
-                if (requestCacheEnabled && cacheKey != null) {
-                    // wrap it for caching
-                    HystrixCachedObservable<R> toCache = HystrixCachedObservable.from(hystrixObservable, _cmd);
-                    HystrixCommandResponseFromCache<R> fromCache = (HystrixCommandResponseFromCache<R>) requestCache.putIfAbsent(cacheKey, toCache);
-                    if (fromCache != null) {
-                        // another thread beat us so we'll use the cached value instead
-                        toCache.unsubscribe();
-                        isResponseFromCache = true;
-                        return handleRequestCacheHitAndEmitValues(fromCache);
-                    } else {
-                        // we just created an ObservableCommand so we cast and return it
-                        afterCache = toCache.toObservable();
-                    }
+            // put in cache
+            if (requestCacheEnabled && cacheKey != null) {
+                // wrap it for caching
+                HystrixCachedObservable<R> toCache = HystrixCachedObservable.from(hystrixObservable, _cmd);
+                HystrixCommandResponseFromCache<R> fromCache = (HystrixCommandResponseFromCache<R>) requestCache.putIfAbsent(cacheKey, toCache);
+                if (fromCache != null) {
+                    // another thread beat us so we'll use the cached value instead
+                    toCache.unsubscribe();
+                    isResponseFromCache = true;
+                    return handleRequestCacheHitAndEmitValues(fromCache);
                 } else {
-                    afterCache = hystrixObservable;
+                    // we just created an ObservableCommand so we cast and return it
+                    afterCache = toCache.toObservable();
                 }
-
-                return afterCache
-                        .doOnTerminate(terminateCommandCleanup)     // perform cleanup once (either on normal terminal state (this line), or unsubscribe (next line))
-                        .doOnUnsubscribe(unsubscribeCommandCleanup) // perform cleanup once
-                        .doOnCompleted(fireOnCompletedHook);
+            } else {
+                afterCache = hystrixObservable;
             }
+
+            return afterCache
+                    .doOnTerminate(terminateCommandCleanup)     // perform cleanup once (either on normal terminal state (this line), or unsubscribe (next line))
+                    .doOnUnsubscribe(unsubscribeCommandCleanup) // perform cleanup once
+                    .doOnCompleted(fireOnCompletedHook);
         });
     }
 
@@ -414,19 +389,13 @@ import java.util.concurrent.atomic.AtomicReference;
         /* determine if we're allowed to execute */
         final TryableSemaphore executionSemaphore = getExecutionSemaphore();
         final AtomicBoolean semaphoreHasBeenReleased = new AtomicBoolean(false);
-        final Action0 singleSemaphoreRelease = new Action0() {
-            @Override
-            public void call() {
-                if (semaphoreHasBeenReleased.compareAndSet(false, true)) {
-                    executionSemaphore.release();
-                }
+        final Action0 singleSemaphoreRelease = () -> {
+            if (semaphoreHasBeenReleased.compareAndSet(false, true)) {
+                executionSemaphore.release();
             }
         };
 
-        final Action1<Throwable> markExceptionThrown = new Action1<Throwable>() {
-            @Override
-            public void call(Throwable t) {
-            }
+        final Action1<Throwable> markExceptionThrown = t -> {
         };
 
         if (executionSemaphore.tryAcquire()) {
@@ -455,126 +424,120 @@ import java.util.concurrent.atomic.AtomicReference;
     private Observable<R> executeCommandAndObserve(final AbstractCommand<R> _cmd) {
         final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
 
-        final Action1<R> markEmits = new Action1<R>() {
-            @Override
-            public void call(R r) {
-                if (commandIsScalar()) {
-                    long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
-                    executionResult = executionResult.addEvent((int) latency, HystrixEventType.SUCCESS);
-                }
+        final Action1<R> markEmits = r -> {
+            if (commandIsScalar()) {
+                long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
+                executionResult = executionResult.addEvent((int) latency, HystrixEventType.SUCCESS);
             }
         };
 
-        final Action0 markOnCompleted = new Action0() {
-            @Override
-            public void call() {
-                if (!commandIsScalar()) {
-                    long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
-                    executionResult = executionResult.addEvent((int) latency, HystrixEventType.SUCCESS);
-                }
+        final Action0 markOnCompleted = () -> {
+            if (!commandIsScalar()) {
+                long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
+                executionResult = executionResult.addEvent((int) latency, HystrixEventType.SUCCESS);
             }
         };
 
-        final Action1<Notification<? super R>> setRequestContext = new Action1<Notification<? super R>>() {
-            @Override
-            public void call(Notification<? super R> rNotification) {
-                setRequestContextIfNeeded(currentRequestContext);
+        final Func1<Throwable, Observable<R>> handleFailure = t -> {
+            Exception e = getExceptionFromThrowable(t);
+            executionResult = executionResult.setExecutionException(e);
+            if (e instanceof RejectedExecutionException) {
+                return handleThreadPoolRejection(e);
+            } else if (t instanceof HystrixBadRequestException) {
+                return handleBadRequestByEmittingError(e);
+            } else {
+                /*
+                 * Treat HystrixBadRequestException from ExecutionHook like a plain HystrixBadRequestException.
+                 */
+                if (e instanceof HystrixBadRequestException) {
+                    return Observable.error(e);
+                }
+
+                return handleFailure(e);
             }
         };
+
+        final Action1<Notification<? super R>> setRequestContext = rNotification -> setRequestContextIfNeeded(currentRequestContext);
 
         Observable<R> execution = executeCommandWithSpecifiedIsolation(_cmd);
 
         return execution.doOnNext(markEmits)
                 .doOnCompleted(markOnCompleted)
+                .onErrorResumeNext(handleFailure)
                 .doOnEach(setRequestContext);
     }
 
     private Observable<R> executeCommandWithSpecifiedIsolation(final AbstractCommand<R> _cmd) {
         if (properties.executionIsolationStrategy().get() == ExecutionIsolationStrategy.THREAD) {
             // mark that we are executing in a thread (even if we end up being rejected we still were a THREAD execution and not SEMAPHORE)
-            return Observable.defer(new Func0<Observable<R>>() {
-                @Override
-                public Observable<R> call() {
-                    executionResult = executionResult.setExecutionOccurred();
-                    if (!commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.USER_CODE_EXECUTED)) {
-                        return Observable.error(new IllegalStateException("execution attempted while in state : " + commandState.get().name()));
-                    }
+            return Observable.defer(() -> {
+                executionResult = executionResult.setExecutionOccurred();
+                if (!commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.USER_CODE_EXECUTED)) {
+                    return Observable.error(new IllegalStateException("execution attempted while in state : " + commandState.get().name()));
+                }
 
-                    if (threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.STARTED)) {
-                        //we have not been unsubscribed, so should proceed
-                        HystrixCounters.incrementGlobalConcurrentThreads();
-                        threadPool.markThreadExecution();
-                        // store the command that is being run
-                        endCurrentThreadExecutingCommand = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
-                        executionResult = executionResult.setExecutedInThread();
-                        /**
-                         * If any of these hooks throw an exception, then it appears as if the actual execution threw an error
-                         */
-                        try {
-                            executionHook.onThreadStart(_cmd);
-                            executionHook.onExecutionStart(_cmd);
-                            return getUserExecutionObservable(_cmd);
-                        } catch (Throwable ex) {
-                            return Observable.error(ex);
-                        }
-                    } else {
-                        //command has already been unsubscribed, so return immediately
-                        return Observable.empty();
-                    }
-                }
-            }).doOnTerminate(new Action0() {
-                @Override
-                public void call() {
-                    if (threadState.compareAndSet(ThreadState.STARTED, ThreadState.TERMINAL)) {
-                        handleThreadEnd(_cmd);
-                    }
-                    if (threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.TERMINAL)) {
-                        //if it was never started and received terminal, then no need to clean up (I don't think this is possible)
-                    }
-                    //if it was unsubscribed, then other cleanup handled it
-                }
-            }).doOnUnsubscribe(new Action0() {
-                @Override
-                public void call() {
-                    if (threadState.compareAndSet(ThreadState.STARTED, ThreadState.UNSUBSCRIBED)) {
-                        handleThreadEnd(_cmd);
-                    }
-                    if (threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.UNSUBSCRIBED)) {
-                        //if it was never started and was cancelled, then no need to clean up
-                    }
-                    //if it was terminal, then other cleanup handled it
-                }
-            }).subscribeOn(threadPool.getScheduler(new Func0<Boolean>() {
-                @Override
-                public Boolean call() {
-                    return false;
-                }
-            }));
-        } else {
-            return Observable.defer(new Func0<Observable<R>>() {
-                @Override
-                public Observable<R> call() {
-                    executionResult = executionResult.setExecutionOccurred();
-                    if (!commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.USER_CODE_EXECUTED)) {
-                        return Observable.error(new IllegalStateException("execution attempted while in state : " + commandState.get().name()));
-                    }
-
-                    // semaphore isolated
+                if (threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.STARTED)) {
+                    //we have not been unsubscribed, so should proceed
+                    HystrixCounters.incrementGlobalConcurrentThreads();
+                    threadPool.markThreadExecution();
                     // store the command that is being run
                     endCurrentThreadExecutingCommand = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
+                    executionResult = executionResult.setExecutedInThread();
+                    /*
+                     * If any of these hooks throw an exception, then it appears as if the actual execution threw an error
+                     */
                     try {
+                        executionHook.onThreadStart(_cmd);
                         executionHook.onExecutionStart(_cmd);
-                        return getUserExecutionObservable(_cmd);  //the getUserExecutionObservable method already wraps sync exceptions, so this shouldn't throw
+                        return getUserExecutionObservable(_cmd);
                     } catch (Throwable ex) {
-                        //If the above hooks throw, then use that as the result of the run method
                         return Observable.error(ex);
                     }
+                } else {
+                    //command has already been unsubscribed, so return immediately
+                    return Observable.empty();
+                }
+            }).doOnTerminate(() -> {
+                if (threadState.compareAndSet(ThreadState.STARTED, ThreadState.TERMINAL)) {
+                    handleThreadEnd(_cmd);
+                }
+                //if it was never started and received terminal, then no need to clean up (I don't think this is possible)
+                threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.TERMINAL);
+                //if it was unsubscribed, then other cleanup handled it
+            }).doOnUnsubscribe(() -> {
+                if (threadState.compareAndSet(ThreadState.STARTED, ThreadState.UNSUBSCRIBED)) {
+                    handleThreadEnd(_cmd);
+                }
+                //if it was never started and was cancelled, then no need to clean up
+                threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.UNSUBSCRIBED);
+                //if it was terminal, then other cleanup handled it
+            }).subscribeOn(threadPool.getScheduler(() -> false));
+        } else {
+            return Observable.defer(() -> {
+                executionResult = executionResult.setExecutionOccurred();
+                if (!commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.USER_CODE_EXECUTED)) {
+                    return Observable.error(new IllegalStateException("execution attempted while in state : " + commandState.get().name()));
+                }
+
+                // semaphore isolated
+                // store the command that is being run
+                endCurrentThreadExecutingCommand = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
+                try {
+                    executionHook.onExecutionStart(_cmd);
+                    return getUserExecutionObservable(_cmd);  //the getUserExecutionObservable method already wraps sync exceptions, so this shouldn't throw
+                } catch (Throwable ex) {
+                    //If the above hooks throw, then use that as the result of the run method
+                    return Observable.error(ex);
                 }
             });
         }
     }
 
-    private Observable<R> throwException(final FailureType failureType, final String message, final Exception originalException) {
+    private Observable<R> throwException(final HystrixEventType eventType, final FailureType failureType, final String message, final Exception originalException) {
+        long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
+        // record the executionResult
+        executionResult = executionResult.addEvent((int) latency, eventType);
+
         if (isUnrecoverable(originalException)) {
             logger.error("Unrecoverable Error for HystrixCommand so will throw HystrixRuntimeException.", originalException);
 
@@ -613,24 +576,18 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         return fromCache.toObservableWithStateCopiedInto(this)
-                .doOnTerminate(new Action0() {
-                    @Override
-                    public void call() {
-                        if (commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.TERMINAL)) {
-                            cleanUpAfterResponseFromCache(); //user code never ran
-                        } else if (commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.TERMINAL)) {
-                            cleanUpAfterResponseFromCache(); //user code did run
-                        }
+                .doOnTerminate(() -> {
+                    if (commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.TERMINAL)) {
+                        cleanUpAfterResponseFromCache(); //user code never ran
+                    } else if (commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.TERMINAL)) {
+                        cleanUpAfterResponseFromCache(); //user code did run
                     }
                 })
-                .doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        if (commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
-                            cleanUpAfterResponseFromCache(); //user code never ran
-                        } else if (commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) {
-                            cleanUpAfterResponseFromCache(); //user code did run
-                        }
+                .doOnUnsubscribe(() -> {
+                    if (commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
+                        cleanUpAfterResponseFromCache(); //user code never ran
+                    } else if (commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) {
+                        cleanUpAfterResponseFromCache(); //user code did run
                     }
                 });
     }
@@ -656,8 +613,46 @@ import java.util.concurrent.atomic.AtomicReference;
         Exception semaphoreRejectionException = new RuntimeException("could not acquire a semaphore for execution");
         executionResult = executionResult.setExecutionException(semaphoreRejectionException);
         logger.debug("HystrixCommand Execution Rejection by Semaphore."); // debug only since we're throwing the exception and someone higher will do something with it
-        return throwException(FailureType.REJECTED_SEMAPHORE_EXECUTION,
+        return throwException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION,
                 "could not acquire a semaphore for execution", semaphoreRejectionException);
+    }
+
+    private Observable<R> handleThreadPoolRejection(Exception underlying) {
+        threadPool.markThreadRejection();
+        return throwException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "could not be queued for execution", underlying);
+    }
+
+    private Observable<R> handleBadRequestByEmittingError(Exception underlying) {
+        Exception toEmit = underlying;
+
+        try {
+            long executionLatency = System.currentTimeMillis() - executionResult.getStartTimestamp();
+            executionResult = executionResult.addEvent((int) executionLatency, HystrixEventType.BAD_REQUEST);
+            Exception decorated = executionHook.onError(this, FailureType.BAD_REQUEST_EXCEPTION, underlying);
+
+            if (decorated instanceof HystrixBadRequestException) {
+                toEmit = decorated;
+            } else {
+                logger.warn("ExecutionHook.onError returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
+            }
+        } catch (Exception hookEx) {
+            logger.warn("Error calling HystrixCommandExecutionHook.onError", hookEx);
+        }
+        /*
+         * HystrixBadRequestException is treated differently and allowed to propagate without any stats tracking
+         */
+        return Observable.error(toEmit);
+    }
+
+    private Observable<R> handleFailure(Exception underlying) {
+        /*
+         * All other error handling
+         */
+        logger.debug("Error executing HystrixCommand.run().", underlying);
+
+        // record the exception
+        executionResult = executionResult.setException(underlying);
+        return throwException(HystrixEventType.FAILURE, FailureType.COMMAND_EXCEPTION, "failed", underlying);
     }
 
     private Observable<R> emitError(Exception underlying, FailureType failureType, String message) {
@@ -798,9 +793,9 @@ import java.util.concurrent.atomic.AtomicReference;
     /* ******************************************************************************** */
 
     private class ExecutionHookApplication implements Operator<R, R> {
-        private final HystrixInvokable<R> cmd;
+        private final HystrixInvokable cmd;
 
-        ExecutionHookApplication(HystrixInvokable<R> cmd) {
+        ExecutionHookApplication(HystrixInvokable cmd) {
             this.cmd = cmd;
         }
 
@@ -872,26 +867,26 @@ import java.util.concurrent.atomic.AtomicReference;
      */
     protected Throwable decomposeException(Exception e) {
         if (e instanceof IllegalStateException) {
-            return (IllegalStateException) e;
+            return e;
         }
         if (e instanceof HystrixBadRequestException) {
             if (shouldNotBeWrapped(e.getCause())) {
                 return e.getCause();
             }
-            return (HystrixBadRequestException) e;
+            return e;
         }
         if (e.getCause() instanceof HystrixBadRequestException) {
             if(shouldNotBeWrapped(e.getCause().getCause())) {
                 return e.getCause().getCause();
             }
-            return (HystrixBadRequestException) e.getCause();
+            return e.getCause();
         }
         if (e instanceof HystrixRuntimeException) {
-            return (HystrixRuntimeException) e;
+            return e;
         }
         // if we have an exception we know about we'll throw it directly without the wrapper exception
         if (e.getCause() instanceof HystrixRuntimeException) {
-            return (HystrixRuntimeException) e.getCause();
+            return e.getCause();
         }
         if (shouldNotBeWrapped(e)) {
             return e;
@@ -970,7 +965,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     }
 
-    /* package */static interface TryableSemaphore {
+    /* package */ interface TryableSemaphore {
 
         /**
          * Use like this:
@@ -988,7 +983,7 @@ import java.util.concurrent.atomic.AtomicReference;
          * 
          * @return boolean
          */
-        public abstract boolean tryAcquire();
+        boolean tryAcquire();
 
         /**
          * ONLY call release if tryAcquire returned true.
@@ -1004,9 +999,9 @@ import java.util.concurrent.atomic.AtomicReference;
          * }
          * </pre>
          */
-        public abstract void release();
+        void release();
 
-        public abstract int getNumberOfPermitsUsed();
+        int getNumberOfPermitsUsed();
 
     }
 

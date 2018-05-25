@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ import java.util.concurrent.Future;
  * 
  * @param <R>
  */
-public interface HystrixExecutable<R> extends HystrixInvokable<R> {
+public interface HystrixExecutable<R> extends HystrixInvokable {
 
     /**
      * Used for synchronous execution of command.
@@ -40,7 +40,7 @@ public interface HystrixExecutable<R> extends HystrixInvokable<R> {
      * @throws HystrixBadRequestException
      *             if the {@link HystrixCommand} instance considers request arguments to be invalid and needs to throw an error that does not represent a system failure
      */
-    public R execute();
+    R execute();
 
     /**
      * Used for asynchronous execution of command.
@@ -57,7 +57,7 @@ public interface HystrixExecutable<R> extends HystrixInvokable<R> {
      * @throws HystrixBadRequestException
      *             if the {@link HystrixCommand} instance considers request arguments to be invalid and needs to throw an error that does not represent a system failure
      */
-    public Future<R> queue();
+    Future<R> queue();
 
     /**
      * Used for asynchronous execution of command with a callback by subscribing to the {@link Observable}.
@@ -85,6 +85,6 @@ public interface HystrixExecutable<R> extends HystrixInvokable<R> {
      * @throws IllegalStateException
      *             if invoked more than once
      */
-    public Observable<R> observe();
+    Observable<R> observe();
 
 }

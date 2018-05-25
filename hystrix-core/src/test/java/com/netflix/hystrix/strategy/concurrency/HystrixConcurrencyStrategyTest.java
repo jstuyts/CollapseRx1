@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,8 +21,6 @@ import com.netflix.hystrix.HystrixCommandGroupKey;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import rx.functions.Action1;
-import rx.functions.Func1;
 
 import static org.junit.Assert.assertTrue;
 
@@ -48,17 +46,7 @@ public class HystrixConcurrencyStrategyTest {
     @Test
     public void testRequestContextPropagatesAcrossObserveOnPool() {
         new SimpleCommand().execute();
-        new SimpleCommand().observe().map(new Func1<String, String>() {
-
-            @Override
-            public String call(String s) {
-                return s;
-            }
-        }).toBlocking().forEach(new Action1<String>() {
-
-            @Override
-            public void call(String s) {
-            }
+        new SimpleCommand().observe().map(s -> s).toBlocking().forEach(s -> {
         });
     }
 
@@ -69,16 +57,15 @@ public class HystrixConcurrencyStrategyTest {
         }
 
         @Override
-        protected String run() throws Exception {
-            if (HystrixRequestContext.isCurrentThreadInitialized()) {
-            }
+        protected String run() {
+            HystrixRequestContext.isCurrentThreadInitialized();
             return "Hello";
         }
 
     }
 
     @Test
-    public void testNoRequestContextOnSimpleConcurencyStrategyWithoutException() throws Exception {
+    public void testNoRequestContextOnSimpleConcurrencyStrategyWithoutException() {
         shutdownContextIfExists();
 
         new SimpleCommand().execute();

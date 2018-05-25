@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2012 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +15,9 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
-import java.util.concurrent.Callable;
-
 import com.netflix.hystrix.strategy.HystrixPlugins;
+
+import java.util.concurrent.Callable;
 
 /**
  * Wrapper around {@link Runnable} that manages the {@link HystrixRequestContext} initialization and cleanup for the execution of the {@link Runnable}
@@ -38,14 +38,9 @@ public class HystrixContextRunnable implements Runnable {
     }
 
     public HystrixContextRunnable(final HystrixConcurrencyStrategy concurrencyStrategy, final HystrixRequestContext hystrixRequestContext, final Runnable actual) {
-        this.actual = concurrencyStrategy.wrapCallable(new Callable<Void>() {
-
-            @Override
-            public Void call() throws Exception {
-                actual.run();
-                return null;
-            }
-
+        this.actual = concurrencyStrategy.wrapCallable(() -> {
+            actual.run();
+            return null;
         });
         this.parentThreadState = hystrixRequestContext;
     }

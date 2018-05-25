@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,20 +15,13 @@
  */
 package com.netflix.hystrix;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-
-import org.junit.Test;
-
-import rx.Observable;
-import rx.Subscriber;
-
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import rx.Subscription;
-import rx.subjects.ReplaySubject;
+import org.junit.Test;
+import rx.Observable;
+
+import static org.junit.Assert.*;
 
 public class HystrixRequestCacheTest {
 
