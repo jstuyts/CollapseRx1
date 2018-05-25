@@ -2594,7 +2594,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                     TestableExecutionHook hook = command.getBuilder().executionHook;
                     assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                     assertTrue(hook.executionEventsMatch(1, 0, 1));
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionSuccess - onThreadComplete - onSuccess - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onExecutionEmit - onEmit - onExecutionSuccess - onThreadComplete - onSuccess - ", hook.executionSequence.toString());
                 });
     }
 
@@ -2637,7 +2637,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             TestableExecutionHook hook = command.getBuilder().executionHook;
             assertTrue(hook.commandEmissionsMatch(0, 0, 0));
             assertTrue(hook.executionEventsMatch(0, 0, 0));
-            assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onUnsubscribe - onThreadComplete - ", hook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onExecutionStart - onUnsubscribe - onThreadComplete - ", hook.executionSequence.toString());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -2659,7 +2659,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                     assertTrue(hook.executionEventsMatch(0, 1, 0));
                     assertEquals(HystrixBadRequestException.class, hook.getCommandException().getClass());
                     assertEquals(HystrixBadRequestException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - onError - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onExecutionError - onThreadComplete - onError - ", hook.executionSequence.toString());
                 });
     }
 
@@ -2681,7 +2681,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                     assertTrue(hook.executionEventsMatch(0, 1, 0));
                     assertEquals(RuntimeException.class, hook.getCommandException().getClass());
                     assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - onError - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onExecutionError - onThreadComplete - onError - ", hook.executionSequence.toString());
                 });
     }
 
@@ -2720,7 +2720,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                     assertTrue(hook.executionEventsMatch(0, 1, 0));
                     assertEquals(RuntimeException.class, hook.getCommandException().getClass());
                     assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - onError - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onExecutionError - onThreadComplete - onError - ", hook.executionSequence.toString());
                 });
     }
 

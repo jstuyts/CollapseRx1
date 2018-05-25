@@ -304,7 +304,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     TestableExecutionHook hook = command.getBuilder().executionHook;
                     assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                     assertTrue(hook.executionEventsMatch(1, 0, 1));
-                    assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionSuccess - onSuccess - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onExecutionStart - onExecutionEmit - onEmit - onExecutionSuccess - onSuccess - ", hook.executionSequence.toString());
                 });
     }
 
@@ -323,7 +323,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.executionEventsMatch(0, 1, 0));
                     assertEquals(HystrixBadRequestException.class, hook.getCommandException().getClass());
                     assertEquals(HystrixBadRequestException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onExecutionStart - onExecutionError - onError - ", hook.executionSequence.toString());
                 });
     }
 
@@ -342,7 +342,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.executionEventsMatch(0, 1, 0));
                     assertEquals(RuntimeException.class, hook.getCommandException().getClass());
                     assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onExecutionStart - onExecutionError - onError - ", hook.executionSequence.toString());
                 });
     }
 

@@ -359,12 +359,13 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
                     return f;
                 } else if (t instanceof HystrixRuntimeException) {
                     HystrixRuntimeException hre = (HystrixRuntimeException) t;
-                    switch (hre.getFailureType()) {
-					case COMMAND_EXCEPTION:
-					default:
-						// these are errors we throw from queue() as they as rejection type errors
-						throw hre;
-					}
+                    if (hre.getFailureType() == HystrixRuntimeException.FailureType.COMMAND_EXCEPTION) {
+                        // we don't throw these types from queue() only from queue().get() as they are execution errors
+                        return f;
+                    } else {
+                        // these are errors we throw from queue() as they as rejection type errors
+                        throw hre;
+                    }
                 } else {
                     throw Exceptions.sneakyThrow(t);
                 }
