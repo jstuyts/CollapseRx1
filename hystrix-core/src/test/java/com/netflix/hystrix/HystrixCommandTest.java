@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
 
+@SuppressWarnings("ConstantConditions")
 public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCommand<Integer>> {
     @Rule
     public HystrixRequestContextRule ctx = new HystrixRequestContextRule();
@@ -184,71 +185,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionException().getCause() instanceof NotWrappedByHystrixTestRuntimeException);
     }
 
-    @Test
-    public void testNotWrappedBadRequest2() {
-        TestHystrixCommand<Integer> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.BAD_REQUEST_NOT_WRAPPED);
-        try {
-            command.execute();
-            fail("we shouldn't get here");
-        } catch (HystrixRuntimeException e) {
-            e.printStackTrace();
-            fail("we shouldn't get a HystrixRuntimeException");
-        } catch (RuntimeException e) {
-            assertTrue(e instanceof NotWrappedByHystrixTestRuntimeException);
-        }
-
-        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
-        assertTrue(command.getEventCounts().contains(HystrixEventType.BAD_REQUEST));
-        assertCommandExecutionEvents(command, HystrixEventType.BAD_REQUEST);
-        assertNotNull(command.getExecutionException());
-        assertTrue(command.getExecutionException() instanceof HystrixBadRequestException);
-        assertTrue(command.getExecutionException().getCause() instanceof NotWrappedByHystrixTestRuntimeException);
-    }
-
-    /**
-     * Test a command execution that fails.
-     */
-    @Test
-    public void testExecutionFailure3() {
-        TestHystrixCommand<Integer> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE);
-        assertEquals("Execution Failure for TestHystrixCommand", command.getFailedExecutionException().getMessage());
-        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
-        assertTrue(command.isFailedExecution());
-        assertNotNull(command.getExecutionException());
-    }
-
-    /**
-     * Test a command execution that throws exception that should not be wrapped.
-     */
-    @Test
-    public void testNotWrappedException2() {
-        TestHystrixCommand<Integer> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.NOT_WRAPPED_FAILURE);
-        assertEquals("Raw exception for TestHystrixCommand", command.getFailedExecutionException().getMessage());
-        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
-        assertTrue(command.isFailedExecution());
-        assertNotNull(command.getExecutionException());
-    }
-
-    /**
-     * Test a command execution that fails.
-     */
-    @Test
-    public void testExecutionFailure2() {
-        TestHystrixCommand<Integer> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE);
-        try {
-            command.execute();
-            fail("we shouldn't get here");
-        } catch (HystrixRuntimeException e) {
-            System.out.println("------------------------------------------------");
-            e.printStackTrace();
-            System.out.println("------------------------------------------------");
-        }
-
-        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
-        assertTrue(command.isFailedExecution());
-        assertNotNull(command.getExecutionException());
-    }
-
     /**
      * Test a successful command execution (asynchronously).
      */
@@ -302,46 +238,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             if (e.getCause() instanceof HystrixRuntimeException) {
                 HystrixRuntimeException de = (HystrixRuntimeException) e.getCause();
                 assertNotNull(de.getImplementingClass());
-            } else {
-                fail("the cause should be HystrixRuntimeException");
-            }
-        }
-
-        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
-        assertTrue(command.isFailedExecution());
-        assertNotNull(command.getExecutionException());
-    }
-
-    /**
-     * Test a command execution (asynchronously) that fails.
-     */
-    @Test
-    public void testQueueFailure() {
-        TestHystrixCommand<Integer> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE);
-        try {
-            command.queue();
-        } catch (Exception e) {
-            e.printStackTrace();
-            fail("We should have received a response.");
-        }
-
-        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
-        assertTrue(command.isFailedExecution());
-        assertNotNull(command.getExecutionException());
-    }
-
-    /**
-     * Test a command execution (asynchronously) that fails.
-     */
-    @Test
-    public void testQueueFailure2() {
-        TestHystrixCommand<Integer> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE);
-        try {
-            command.queue().get();
-            fail("we shouldn't get here");
-        } catch (Exception e) {
-            if (e.getCause() instanceof HystrixRuntimeException) {
-                e.printStackTrace();
             } else {
                 fail("the cause should be HystrixRuntimeException");
             }
@@ -525,79 +421,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         f.get();
 
         assertCommandExecutionEvents(command1, HystrixEventType.SUCCESS);
-    }
-
-    /**
-     * Test when a command fails to get queued up in the threadpool.
-     * <p>
-     * We specifically want to protect against developers getting random thread exceptions.
-     */
-    @Test
-    public void testRejectedThread2() throws InterruptedException {
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Rejection");
-        SingleThreadedPoolWithQueue pool = new SingleThreadedPoolWithQueue(1);
-
-        //command 1 will execute in threadpool (passing through the queue)
-        //command 2 will execute after spending time in the queue (after command1 completes)
-        //command 3 will get rejected, since it finds pool and queue both full
-        TestCommandRejection command1 = new TestCommandRejection(key, pool, 500);
-        TestCommandRejection command2 = new TestCommandRejection(key, pool, 500);
-        TestCommandRejection command3 = new TestCommandRejection(key, pool, 500);
-
-        Observable<Boolean> result1 = command1.observe();
-        Observable<Boolean> result2 = command2.observe();
-
-        Thread.sleep(100);
-        //command3 should find queue filled, and get rejected
-        assertFalse(command3.execute());
-        assertTrue(command3.isResponseRejected());
-        assertFalse(command1.isResponseRejected());
-        assertFalse(command2.isResponseRejected());
-        assertNotNull(command3.getExecutionException());
-
-        Observable.merge(result1, result2).toList().toBlocking().single(); //await the 2 latent commands
-    }
-
-    /**
-     * Test when a command fails to get queued up in the threadpool.
-     * <p>
-     * We specifically want to protect against developers getting random thread exceptions and instead just correctly receives an HystrixRuntimeException.
-     */
-    @Test
-    public void testRejectedThread3() throws ExecutionException, InterruptedException {
-        SingleThreadedPoolWithQueue pool = new SingleThreadedPoolWithQueue(1);
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Rejection-A");
-
-        TestCommandRejection command1 = new TestCommandRejection(key, pool, 500); //this should pass through the queue and sit in the pool
-        TestCommandRejection command2 = new TestCommandRejection(key, pool, 500); //this should sit in the queue
-        TestCommandRejection command3 = new TestCommandRejection(key, pool, 500); //this should observe full queue and get rejected
-        Future<Boolean> f1 = null;
-        Future<Boolean> f2 = null;
-        try {
-            f1 = command1.queue();
-            f2 = command2.queue();
-            assertEquals(false, command3.queue().get()); //should get thread-pool rejected
-            fail("we shouldn't get here");
-        } catch (Exception e) {
-            e.printStackTrace();
-            if (e instanceof HystrixRuntimeException && e.getCause() instanceof RejectedExecutionException) {
-                HystrixRuntimeException de = (HystrixRuntimeException) e;
-                assertNotNull(de.getImplementingClass());
-                assertNotNull(de.getCause());
-                assertTrue(de.getCause() instanceof RejectedExecutionException);
-            } else {
-                fail("the exception should be HystrixRuntimeException with cause as RejectedExecutionException");
-            }
-        }
-
-        assertCommandExecutionEvents(command1); //still in-flight, no events yet
-        assertCommandExecutionEvents(command2); //still in-flight, no events yet
-
-        //block on the outstanding work, so we don't inadvertently affect any other tests
-        long startTime = System.currentTimeMillis();
-        f1.get();
-        f2.get();
-        System.out.println("Time blocked : " + (System.currentTimeMillis() - startTime));
     }
 
     /**
@@ -1458,27 +1281,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
     @Test
     public void testUnrecoverableErrorThrown() {
-        TestHystrixCommand<Integer> command = getUnrecoverableErrorCommand(ExecutionIsolationStrategy.THREAD);
-        try {
-            command.execute();
-            fail("we expect to receive a " + Error.class.getSimpleName());
-        } catch (Exception e) {
-            // the actual error is an extra cause level deep because Hystrix needs to wrap Throwable/Error as it's public
-            // methods only support Exception and it's not a strong enough reason to break backwards compatibility and jump to version 2.x
-            // so HystrixRuntimeException -> wrapper Exception -> actual Error
-            assertEquals("Unrecoverable Error for TestHystrixCommand", e.getCause().getCause().getMessage());
-        }
-
-        assertEquals("Unrecoverable Error for TestHystrixCommand", command.getFailedExecutionException().getCause().getMessage());
-
-        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
-        assertTrue(command.isFailedExecution());
-        assertCommandExecutionEvents(command, HystrixEventType.FAILURE);
-        assertNotNull(command.getExecutionException());
-    }
-
-    @Test
-    public void testUnrecoverableErrorThrown2() {
         TestHystrixCommand<Integer> command = getUnrecoverableErrorCommand(ExecutionIsolationStrategy.THREAD);
         try {
             command.execute();
@@ -2687,45 +2489,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
     /**
      * Thread/semaphore: THREAD
-     * Thread Pool full? : NO
-     * Thread Pool Queue full?: NO
-     * Execution Result: synchronous HystrixRuntimeException
-     */
-    @Test
-    public void testExecutionHookThreadException2() {
-        assertHooksOnSuccess(
-                () -> getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 0),
-                command -> {
-                    TestableExecutionHook hook = command.getBuilder().executionHook;
-                    assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                    assertTrue(hook.executionEventsMatch(0, 1, 0));
-                    assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onThreadComplete - !onComplete - onEmit - onSuccess - ", hook.executionSequence.toString());
-                });
-    }
-
-    /**
-     * Thread/semaphore: THREAD
-     * Thread Pool full? : NO
-     * Thread Pool Queue full?: NO
-     * Execution Result: synchronous HystrixRuntimeException
-     */
-    @Test
-    public void testExecutionHookThreadException3() {
-        assertHooksOnFailure(
-                () -> getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 0),
-                command -> {
-                    TestableExecutionHook hook = command.getBuilder().executionHook;
-                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                    assertTrue(hook.executionEventsMatch(0, 1, 0));
-                    assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                    assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - onThreadStart - onExecutionStart - onExecutionError - onThreadComplete - onError - ", hook.executionSequence.toString());
-                });
-    }
-
-    /**
-     * Thread/semaphore: THREAD
      * Thread Pool full? : YES
      * Thread Pool Queue full?: YES
      */
@@ -2742,65 +2505,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                     } catch (Exception e) {
                         // ignore
                     }
-                    return getLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, pool);
-                },
-                command -> {
-                    TestableExecutionHook hook = command.getBuilder().executionHook;
-                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                    assertTrue(hook.executionEventsMatch(0, 0, 0));
-                    assertEquals(RejectedExecutionException.class, hook.getCommandException().getClass());
-                    assertEquals("onStart - onError - ", hook.executionSequence.toString());
-                });
-    }
-
-    /**
-     * Thread/semaphore: THREAD
-     * Thread Pool full? : YES
-     * Thread Pool Queue full?: YES
-     */
-    @Test
-    public void testExecutionHookThreadPoolQueueFull2() {
-        assertHooksOnSuccess(
-                () -> {
-                    HystrixThreadPool pool = new SingleThreadedPoolWithQueue(1);
-                    try {
-                        // fill the pool
-                        getLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, pool).observe();
-                        // fill the queue
-                        getLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, pool).observe();
-                    } catch (Exception e) {
-                        // ignore
-                    }
-
-                    return getLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, pool);
-                },
-                command -> {
-                    TestableExecutionHook hook = command.getBuilder().executionHook;
-                    assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                    assertTrue(hook.executionEventsMatch(0, 0, 0));
-                    assertEquals("onStart - !onComplete - onEmit - onSuccess - ", hook.executionSequence.toString());
-                });
-    }
-
-    /**
-     * Thread/semaphore: THREAD
-     * Thread Pool full? : YES
-     * Thread Pool Queue full?: YES
-     */
-    @Test
-    public void testExecutionHookThreadPoolQueueFull3() {
-        assertHooksOnFailFast(
-                () -> {
-                    HystrixThreadPool pool = new SingleThreadedPoolWithQueue(1);
-                    try {
-                        // fill the pool
-                        getLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, pool).observe();
-                        // fill the queue
-                        getLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, pool).observe();
-                    } catch (Exception e) {
-                        // ignore
-                    }
-
                     return getLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, pool);
                 },
                 command -> {
@@ -2842,95 +2546,9 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
     /**
      * Thread/semaphore: THREAD
-     * Thread Pool full? : YES
-     * Thread Pool Queue full?: N/A
-     */
-    @Test
-    public void testExecutionHookThreadPoolFull2() {
-        assertHooksOnSuccess(
-                () -> {
-                    HystrixThreadPool pool = new SingleThreadedPoolWithNoQueue();
-                    try {
-                        // fill the pool
-                        getLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, pool).observe();
-                    } catch (Exception e) {
-                        // ignore
-                    }
-
-                    return getLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, pool);
-                },
-                command -> {
-                    TestableExecutionHook hook = command.getBuilder().executionHook;
-                    assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                    assertTrue(hook.executionEventsMatch(0, 0, 0));
-                    assertEquals("onStart - !onComplete - onEmit - - onSuccess - ", hook.executionSequence.toString());
-                });
-    }
-
-    /**
-     * Thread/semaphore: THREAD
-     * Thread Pool full? : YES
-     * Thread Pool Queue full?: N/A
-     */
-    @Test
-    public void testExecutionHookThreadPoolFull3() {
-        assertHooksOnFailFast(
-                () -> {
-                    HystrixThreadPool pool = new SingleThreadedPoolWithNoQueue();
-                    try {
-                        // fill the pool
-                        getLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, pool).observe();
-                    } catch (Exception e) {
-                        // ignore
-                    }
-
-                    return getLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, pool);
-                },
-                command -> {
-                    TestableExecutionHook hook = command.getBuilder().executionHook;
-                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                    assertTrue(hook.executionEventsMatch(0, 0, 0));
-                    assertEquals(RejectedExecutionException.class, hook.getCommandException().getClass());
-                    assertEquals("onStart - onError - ", hook.executionSequence.toString());
-                });
-    }
-
-    /**
-     * Thread/semaphore: THREAD
      */
     @Test
     public void testExecutionHookThread() {
-        assertHooksOnFailFast(
-                () -> getCircuitOpenCommand(ExecutionIsolationStrategy.THREAD),
-                command -> {
-                    TestableExecutionHook hook = command.getBuilder().executionHook;
-                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                    assertTrue(hook.executionEventsMatch(0, 0, 0));
-                    assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                    assertEquals("onStart - onError - ", hook.executionSequence.toString());
-                });
-    }
-
-    /**
-     * Thread/semaphore: THREAD
-     */
-    @Test
-    public void testExecutionHookThread2() {
-        assertHooksOnSuccess(
-                () -> getCircuitOpenCommand(ExecutionIsolationStrategy.THREAD),
-                command -> {
-                    TestableExecutionHook hook = command.getBuilder().executionHook;
-                    assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                    assertTrue(hook.executionEventsMatch(0, 0, 0));
-                    assertEquals("onStart - !onComplete - onEmit - onSuccess - ", hook.executionSequence.toString());
-                });
-    }
-
-    /**
-     * Thread/semaphore: THREAD
-     */
-    @Test
-    public void testExecutionHookThread3() {
         assertHooksOnFailFast(
                 () -> getCircuitOpenCommand(ExecutionIsolationStrategy.THREAD),
                 command -> {
