@@ -425,6 +425,9 @@ import java.util.concurrent.atomic.AtomicReference;
         final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
 
         final Action1<R> markEmits = r -> {
+            if (shouldOutputOnNextEvents()) {
+                executionResult = executionResult.addEvent(HystrixEventType.EMIT);
+            }
             if (commandIsScalar()) {
                 long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
                 executionResult = executionResult.addEvent((int) latency, HystrixEventType.SUCCESS);
@@ -717,6 +720,14 @@ import java.util.concurrent.atomic.AtomicReference;
         } catch (Throwable hookEx) {
             logger.warn("Error calling HystrixCommandExecutionHook.onThreadComplete", hookEx);
         }
+    }
+
+    /**
+     *
+     * @return if onNext events should be reported on
+     */
+    protected boolean shouldOutputOnNextEvents() {
+        return false;
     }
 
     private static void setRequestContextIfNeeded(final HystrixRequestContext currentRequestContext) {

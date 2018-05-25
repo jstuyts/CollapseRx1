@@ -48,6 +48,17 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
         this(new Setter(group));
     }
 
+    /**
+     *
+     * Overridden to true so that all onNext emissions are captured
+     *
+     * @return if onNext events should be reported on
+     */
+    @Override
+    protected boolean shouldOutputOnNextEvents() {
+        return true;
+    }
+
     @Override
     protected boolean commandIsScalar() {
         return false;
