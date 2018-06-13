@@ -381,42 +381,6 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                 });
     }
 
-
-
-    /**
-     * Thread/semaphore: SEMAPHORE
-     * Semaphore Permit reached? : YES
-     */
-    @Test
-    public void testExecutionHookSemaphoreRejected2() {
-        assertHooksOnSuccess(
-                () -> {
-                    AbstractCommand.TryableSemaphore semaphore = new AbstractCommand.TryableSemaphoreActual(HystrixProperty.Factory.asProperty(2));
-
-                    final C cmd1 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 1500, semaphore);
-                    final C cmd2 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 1500, semaphore);
-
-                    //saturate the semaphore
-                    new Thread(cmd1::observe).start();
-                    new Thread(cmd2::observe).start();
-
-                    try {
-                        //give the saturating threads a chance to run before we run the command we want to get rejected
-                        Thread.sleep(200);
-                    } catch (InterruptedException ie) {
-                        throw new RuntimeException(ie);
-                    }
-
-                    return getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, semaphore);
-                },
-                command -> {
-                    TestableExecutionHook hook = command.getBuilder().executionHook;
-                    assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                    assertTrue(hook.executionEventsMatch(0, 0, 0));
-                    assertEquals("onStart - !onComplete - onEmit - onSuccess - ", hook.executionSequence.toString());
-                });
-    }
-
     /**
      * Thread/semaphore: SEMAPHORE
      * Semaphore Permit reached? : YES
@@ -465,21 +429,6 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.executionEventsMatch(0, 0, 0));
                     assertEquals(RuntimeException.class, hook.getCommandException().getClass());
                     assertEquals("onStart - onError - ", hook.executionSequence.toString());
-                });
-    }
-
-    /**
-     * Thread/semaphore: SEMAPHORE
-     */
-    @Test
-    public void testExecutionHookSemaphore2() {
-        assertHooksOnSuccess(
-                () -> getCircuitOpenCommand(ExecutionIsolationStrategy.SEMAPHORE),
-                command -> {
-                    TestableExecutionHook hook = command.getBuilder().executionHook;
-                    assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                    assertTrue(hook.executionEventsMatch(0, 0, 0));
-                    assertEquals("onStart - !onComplete - onEmit - onSuccess - ", hook.executionSequence.toString());
                 });
     }
 
