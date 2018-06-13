@@ -509,7 +509,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         final CountDownLatch allTerminal = new CountDownLatch(1);
 
         Observable.merge(results)
-                .subscribeOn(Schedulers.newThread())
+                .subscribeOn(Schedulers.computation())
                 .subscribe(new Subscriber<Boolean>() {
                     @Override
                     public void onCompleted() {
