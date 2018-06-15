@@ -138,7 +138,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.isFailedExecution());
         assertNotNull(command.getExecutionException());
     }
-    
+
     /**
      * Test a command execution that throws an exception that should not be wrapped.
      */
@@ -154,7 +154,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         } catch (RuntimeException e) {
             assertTrue(e instanceof NotWrappedByHystrixTestRuntimeException);
         }
-        
+
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertNotNull(command.getExecutionException());
@@ -1492,22 +1492,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     @Test
-    public void testChainedCommand() {
-        class PrimaryCommand extends TestHystrixCommand<Integer> {
-            public PrimaryCommand() {
-                super(testPropsBuilder());
-            }
-
-            @Override
-            protected Integer run() {
-                throw new RuntimeException("primary failure");
-            }
-        }
-
-        assertEquals(2, (int) new PrimaryCommand().execute());
-    }
-
-    @Test
     public void testSemaphoreThreadSafety() {
         final int NUM_PERMITS = 1;
         final TryableSemaphoreActual s = new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(NUM_PERMITS));
@@ -2540,22 +2524,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                     assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                     assertTrue(hook.executionEventsMatch(0, 0, 0));
                     assertEquals(RejectedExecutionException.class, hook.getCommandException().getClass());
-                    assertEquals("onStart - onError - ", hook.executionSequence.toString());
-                });
-    }
-
-    /**
-     * Thread/semaphore: THREAD
-     */
-    @Test
-    public void testExecutionHookThread() {
-        assertHooksOnFailFast(
-                () -> getCircuitOpenCommand(ExecutionIsolationStrategy.THREAD),
-                command -> {
-                    TestableExecutionHook hook = command.getBuilder().executionHook;
-                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                    assertTrue(hook.executionEventsMatch(0, 0, 0));
-                    assertEquals(RuntimeException.class, hook.getCommandException().getClass());
                     assertEquals("onStart - onError - ", hook.executionSequence.toString());
                 });
     }

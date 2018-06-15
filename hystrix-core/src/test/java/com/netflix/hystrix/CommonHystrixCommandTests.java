@@ -460,10 +460,6 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         return getCommand(isolationStrategy, executionResult, executionLatency, null, CacheEnabled.NO, "foo", executionSemaphore);
     }
 
-    C getCircuitOpenCommand(ExecutionIsolationStrategy isolationStrategy) {
-        return getCommand(isolationStrategy, ExecutionResult.SUCCESS, 0, null, CacheEnabled.NO, "foo", 10);
-    }
-
     C getRecoverableErrorCommand(ExecutionIsolationStrategy isolationStrategy) {
         return getCommand(isolationStrategy, ExecutionResult.RECOVERABLE_ERROR, 0);
     }
