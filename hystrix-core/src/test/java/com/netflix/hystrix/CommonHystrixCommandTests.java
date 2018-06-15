@@ -416,38 +416,6 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                 });
     }
 
-    /**
-     * Thread/semaphore: SEMAPHORE
-     */
-    @Test
-    public void testExecutionHookSemaphore() {
-        assertHooksOnFailFast(
-                () -> getCircuitOpenCommand(ExecutionIsolationStrategy.SEMAPHORE),
-                command -> {
-                    TestableExecutionHook hook = command.getBuilder().executionHook;
-                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                    assertTrue(hook.executionEventsMatch(0, 0, 0));
-                    assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                    assertEquals("onStart - onError - ", hook.executionSequence.toString());
-                });
-    }
-
-    /**
-     * Thread/semaphore: SEMAPHORE
-     */
-    @Test
-    public void testExecutionHookSemaphore3() {
-        assertHooksOnFailFast(
-                () -> getCircuitOpenCommand(ExecutionIsolationStrategy.SEMAPHORE),
-                command -> {
-                    TestableExecutionHook hook = command.getBuilder().executionHook;
-                    assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                    assertTrue(hook.executionEventsMatch(0, 0, 0));
-                    assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                    assertEquals("onStart - onError - ", hook.executionSequence.toString());
-                });
-    }
-
     /*
      ********************* END SEMAPHORE-ISOLATED Execution Hook Tests ***********************************
      */
