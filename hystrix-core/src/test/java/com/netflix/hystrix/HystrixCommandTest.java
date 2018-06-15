@@ -1272,6 +1272,11 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     @Test
     public void testRecoverableErrorLogged() {
         TestHystrixCommand<Integer> command = getRecoverableErrorCommand(ExecutionIsolationStrategy.THREAD);
+        try {
+            command.execute();
+            fail("Expected HystrixRuntimeException");
+        } catch (HystrixRuntimeException e) {
+        }
 
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
