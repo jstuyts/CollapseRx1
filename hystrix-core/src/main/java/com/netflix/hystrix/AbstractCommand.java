@@ -1,12 +1,12 @@
 /*
  * Copyright 2013 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -107,7 +107,8 @@ import java.util.concurrent.atomic.AtomicReference;
     // on the repetitive string processing that will occur on the same classes over and over again
     private static ConcurrentHashMap<Class<?>, String> defaultNameCache = new ConcurrentHashMap<>();
 
-    /* package */static String getDefaultNameFromClass(Class<?> cls) {
+    /* package */
+    static String getDefaultNameFromClass(Class<?> cls) {
         String fromCache = defaultNameCache.get(cls);
         if (fromCache != null) {
             return fromCache;
@@ -125,8 +126,8 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     protected AbstractCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixThreadPool threadPool,
-            HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
-            TryableSemaphore executionSemaphore, HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
+                              HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
+                              TryableSemaphore executionSemaphore, HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
 
         this.commandGroup = initGroupKey(group);
         this.commandKey = initCommandKey(key, getClass());
@@ -205,7 +206,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * Allow the Collapser to mark this command instance as being used for a collapsed request and how many requests were collapsed.
-     * 
+     *
      * @param sizeOfBatch number of commands in request batch
      */
     /* package */void markAsCollapsedCommand(HystrixCollapserKey collapserKey, int sizeOfBatch) {
@@ -220,17 +221,14 @@ import java.util.concurrent.atomic.AtomicReference;
      * A lazy {@link Observable} can be obtained from {@link #toObservable()}.
      * <p>
      * See https://github.com/Netflix/RxJava/wiki for more information.
-     * 
+     *
      * @return {@code Observable<R>} that executes and calls back with the result of command execution.
-     * @throws HystrixRuntimeException
-     *             <ul>
-     *             <li>via {@code Observer#onError} if a failure occurs</li>
-     *             <li>or immediately if the command can not be queued (such as thread-pool/semaphore rejected)</li>
-     *             </ul>
-     * @throws HystrixBadRequestException
-     *             via {@code Observer#onError} if invalid arguments or state were used representing a user failure, not a system failure
-     * @throws IllegalStateException
-     *             if invoked more than once
+     * @throws HystrixRuntimeException    <ul>
+     *                                    <li>via {@code Observer#onError} if a failure occurs</li>
+     *                                    <li>or immediately if the command can not be queued (such as thread-pool/semaphore rejected)</li>
+     *                                    </ul>
+     * @throws HystrixBadRequestException via {@code Observer#onError} if invalid arguments or state were used representing a user failure, not a system failure
+     * @throws IllegalStateException      if invoked more than once
      */
     public Observable<R> observe() {
         // us a ReplaySubject to buffer the eagerly subscribed-to Observable
@@ -251,18 +249,15 @@ import java.util.concurrent.atomic.AtomicReference;
      * An eager {@link Observable} can be obtained from {@link #observe()}.
      * <p>
      * See https://github.com/ReactiveX/RxJava/wiki for more information.
-     * 
+     *
      * @return {@code Observable<R>} that executes and calls back with the result of command execution.
-     * @throws HystrixRuntimeException
-     *             <p>
-     *             <ul>
-     *             <li>via {@code Observer#onError} if a failure occurs</li>
-     *             <li>or immediately if the command can not be queued (such as thread-pool/semaphore rejected)</li>
-     *             </ul>
-     * @throws HystrixBadRequestException
-     *             via {@code Observer#onError} if invalid arguments or state were used representing a user failure, not a system failure
-     * @throws IllegalStateException
-     *             if invoked more than once
+     * @throws HystrixRuntimeException    <p>
+     *                                    <ul>
+     *                                    <li>via {@code Observer#onError} if a failure occurs</li>
+     *                                    <li>or immediately if the command can not be queued (such as thread-pool/semaphore rejected)</li>
+     *                                    </ul>
+     * @throws HystrixBadRequestException via {@code Observer#onError} if invalid arguments or state were used representing a user failure, not a system failure
+     * @throws IllegalStateException      if invoked more than once
      */
     public Observable<R> toObservable() {
         final AbstractCommand<R> _cmd = this;
@@ -329,7 +324,7 @@ import java.util.concurrent.atomic.AtomicReference;
         };
 
         return Observable.defer(() -> {
-             /* this is a stateful object so can only be used once */
+            /* this is a stateful object so can only be used once */
             if (!commandState.compareAndSet(CommandState.NOT_STARTED, CommandState.OBSERVABLE_CHAIN_CREATED)) {
                 IllegalStateException ex = new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
                 //TODO make a new error type for this
@@ -552,6 +547,10 @@ import java.util.concurrent.atomic.AtomicReference;
                 logger.warn("Recovered from java.lang.Error by emitting error", originalException);
             }
 
+            if (shouldNotBeWrapped(originalException)) {
+                return Observable.error(originalException);
+            }
+
             return emitError(originalException, failureType, message);
         }
     }
@@ -672,9 +671,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * Returns true iff the t was caused by a java.lang.Error that is unrecoverable.  Note: not all java.lang.Errors are unrecoverable.
+     *
+     * @param t throwable to check
+     * @return true iff the t was caused by a java.lang.Error that is unrecoverable
      * @see <a href="https://github.com/Netflix/Hystrix/issues/713"></a> for more context
      * Solution taken from <a href="https://github.com/ReactiveX/RxJava/issues/748"></a>
-     *
+     * <p>
      * The specific set of Error that are considered unrecoverable are:
      * <ul>
      * <li>{@code StackOverflowError}</li>
@@ -682,9 +684,6 @@ import java.util.concurrent.atomic.AtomicReference;
      * <li>{@code ThreadDeath}</li>
      * <li>{@code LinkageError}</li>
      * </ul>
-     *
-     * @param t throwable to check
-     * @return true iff the t was caused by a java.lang.Error that is unrecoverable
      */
     private boolean isUnrecoverable(Throwable t) {
         if (t != null && t.getCause() != null) {
@@ -723,7 +722,6 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     /**
-     *
      * @return if onNext events should be reported on
      */
     protected boolean shouldOutputOnNextEvents() {
@@ -739,7 +737,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * Get the TryableSemaphore this HystrixCommand should use for execution if not running in a separate thread.
-     * 
+     *
      * @return TryableSemaphore
      */
     protected TryableSemaphore getExecutionSemaphore() {
@@ -765,9 +763,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * @return {@link HystrixCommandGroupKey} used to group together multiple {@link AbstractCommand} objects.
-     *         <p>
-     *         The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace with,
-     *         common business purpose etc.
+     * <p>
+     * The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace with,
+     * common business purpose etc.
      */
     public HystrixCommandGroupKey getCommandGroup() {
         return commandGroup;
@@ -782,7 +780,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * @return {@link HystrixThreadPoolKey} identifying which thread-pool this command uses (when configured to run on separate threads via
-     *         {@link HystrixCommandProperties#executionIsolationStrategy()}).
+     * {@link HystrixCommandProperties#executionIsolationStrategy()}).
      */
     public HystrixThreadPoolKey getThreadPoolKey() {
         return threadPoolKey;
@@ -790,7 +788,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * The {@link HystrixCommandProperties} associated with this {@link AbstractCommand} instance.
-     * 
+     *
      * @return HystrixCommandProperties
      */
     public HystrixCommandProperties getProperties() {
@@ -872,7 +870,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * <p>
      * This will only throw an HystrixRuntimeException, HystrixBadRequestException, IllegalStateException
      * or any exception that implements ExceptionNotWrappedByHystrix.
-     * 
+     *
      * @param e initial exception
      * @return HystrixRuntimeException, HystrixBadRequestException or IllegalStateException
      */
@@ -887,7 +885,7 @@ import java.util.concurrent.atomic.AtomicReference;
             return e;
         }
         if (e.getCause() instanceof HystrixBadRequestException) {
-            if(shouldNotBeWrapped(e.getCause().getCause())) {
+            if (shouldNotBeWrapped(e.getCause().getCause())) {
                 return e.getCause().getCause();
             }
             return e.getCause();
@@ -981,7 +979,7 @@ import java.util.concurrent.atomic.AtomicReference;
         /**
          * Use like this:
          * <p>
-         * 
+         *
          * <pre>
          * if (s.tryAcquire()) {
          * try {
@@ -991,7 +989,7 @@ import java.util.concurrent.atomic.AtomicReference;
          * }
          * }
          * </pre>
-         * 
+         *
          * @return boolean
          */
         boolean tryAcquire();
@@ -999,7 +997,7 @@ import java.util.concurrent.atomic.AtomicReference;
         /**
          * ONLY call release if tryAcquire returned true.
          * <p>
-         * 
+         *
          * <pre>
          * if (s.tryAcquire()) {
          * try {
@@ -1030,7 +1028,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * To enable caching override this method and return a string key uniquely representing the state of a command instance.
      * <p>
      * If multiple command instances in the same request scope match keys then only the first will be executed and all others returned from cache.
-     * 
+     *
      * @return cacheKey
      */
     protected String getCacheKey() {
@@ -1051,7 +1049,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * If this command has completed execution either successfully or via failure.
-     * 
+     *
      * @return boolean
      */
     public boolean isExecutionComplete() {
@@ -1064,7 +1062,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * This should be called only once execute()/queue()/fireOrForget() are called otherwise it will always return false.
      * <p>
      * This specifies if a thread execution actually occurred, not just if it is configured to be executed in a thread.
-     * 
+     *
      * @return boolean
      */
     public boolean isExecutedInThread() {
@@ -1073,7 +1071,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * Whether the response was returned successfully either by executing <code>run()</code> or from cache.
-     * 
+     *
      * @return boolean
      */
     public boolean isSuccessfulExecution() {
@@ -1082,7 +1080,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * Whether the <code>run()</code> resulted in a failure (exception).
-     * 
+     *
      * @return boolean
      */
     public boolean isFailedExecution() {
@@ -1095,7 +1093,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * If <code>isFailedExecution() == true</code> then this would represent the Exception thrown by the <code>run()</code> method.
      * <p>
      * If <code>isFailedExecution() == false</code> then this would return null.
-     * 
+     *
      * @return Throwable or null
      */
     public Throwable getFailedExecutionException() {
@@ -1108,7 +1106,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * 1) failed execution (in this case, same result as {@link #getFailedExecutionException()}.
      * 2) rejection
      * 3) bad request
-     *
+     * <p>
      * If the command execution was successful, then this exception instance is null (there was no exception)
      *
      * @return Throwable or null
@@ -1119,7 +1117,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * Whether the response is from cache and <code>run()</code> was not invoked.
-     * 
+     *
      * @return boolean
      */
     public boolean isResponseFromCache() {
@@ -1157,7 +1155,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * List of HystrixCommandEventType enums representing events that occurred during execution.
      * <p>
      * Examples of events are SUCCESS and FAILURE
-     * 
+     *
      * @return {@code List<HystrixEventType>}
      */
     public List<HystrixEventType> getExecutionEvents() {
@@ -1181,6 +1179,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * Number of emissions of the execution of a command.  Only interesting in the streaming case.
+     *
      * @return number of <code>OnNext</code> emissions by a streaming command
      */
     @Override
@@ -1200,7 +1199,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * The execution time of this command instance in milliseconds, or -1 if not executed.
-     * 
+     *
      * @return int
      */
     public int getExecutionTimeInMilliseconds() {
@@ -1208,10 +1207,10 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     /**
-     * Time in Nanos when this command instance's run method was called, or -1 if not executed 
+     * Time in Nanos when this command instance's run method was called, or -1 if not executed
      * for e.g., command threw an exception
-      *
-      * @return long
+     *
+     * @return long
      */
     public long getCommandRunStartTimeInNanos() {
         return executionResult.getCommandRunStartTimeInNanos();
