@@ -1,14 +1,10 @@
 rootProject.name='collapserx1'
 include 'hystrix-core', \
 'hystrix-examples', \
-'hystrix-contrib/hystrix-clj', \
 'hystrix-contrib/hystrix-request-servlet', \
-'hystrix-contrib/hystrix-javanica', \
 'hystrix-contrib/hystrix-junit'
 
 project(':hystrix-core').name = 'collapserx1-core'
 project(':hystrix-examples').name = 'collapserx1-examples'
-project(':hystrix-contrib/hystrix-clj').name = 'collapserx1-clj'
 project(':hystrix-contrib/hystrix-request-servlet').name = 'collapserx1-request-servlet'
-project(':hystrix-contrib/hystrix-javanica').name = 'collapserx1-javanica'
 project(':hystrix-contrib/hystrix-junit').name = 'collapserx1-junit'
