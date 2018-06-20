@@ -1,15 +1,4 @@
-buildscript {
-    repositories {
-        jcenter()
-    }
-
-    dependencies {
-        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:3.3.0'
-    }
-}
-
 plugins {
-    id 'nebula.netflixoss' version '5.0.0'
     id 'me.champeau.gradle.jmh' version '0.4.5'
     id 'net.saliman.cobertura' version '2.5.4'
 }
@@ -42,24 +31,11 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: 'nebula.netflixoss'
     apply plugin: 'java'
-	apply plugin: 'nebula.compile-api'
-	
+
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
     group = "com.javathinker.${githubProjectName}"
-
-    eclipse {
-        classpath {
-            downloadSources = true
-            downloadJavadoc = true
-        }
-    }
-
-    idea {
-        module {
-        }
-    }
+    version = '1-SNAPSHOT'
 }

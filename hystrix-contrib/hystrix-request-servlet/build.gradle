@@ -1,4 +1,4 @@
 dependencies {
-    compileApi project(':collapserx1-core')
+    compile project(':collapserx1-core')
     compileOnly libraries.servletApi
 }

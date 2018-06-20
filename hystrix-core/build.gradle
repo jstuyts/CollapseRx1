@@ -2,8 +2,8 @@ apply plugin: 'osgi'
 apply plugin: 'me.champeau.gradle.jmh'
 
 dependencies {
-    compileApi libraries.archaiusCore
-    compileApi libraries.rxjava
+    compile libraries.archaiusCore
+    compile libraries.rxjava
     compile libraries.slf4jApi
     testCompile libraries.junit
     testCompile project(':collapserx1-junit')

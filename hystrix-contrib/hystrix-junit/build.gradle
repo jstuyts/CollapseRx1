@@ -1,4 +1,4 @@
 dependencies {
-  compileApi project(':collapserx1-core')
-  compileApi libraries.junit
+  compile project(':collapserx1-core')
+  compile libraries.junit
 }
