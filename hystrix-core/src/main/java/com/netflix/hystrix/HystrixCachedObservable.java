@@ -4,10 +4,12 @@ import rx.Observable;
 import rx.Subscription;
 import rx.subjects.ReplaySubject;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class HystrixCachedObservable<R> {
     protected final Subscription originalSubscription;
     protected final Observable<R> cachedObservable;
-    private volatile int outstandingSubscriptions = 0;
+    private AtomicInteger outstandingSubscriptions = new AtomicInteger();
 
     protected HystrixCachedObservable(final Observable<R> originalObservable) {
         ReplaySubject<R> replaySubject = ReplaySubject.create();
@@ -16,12 +18,11 @@ public class HystrixCachedObservable<R> {
 
         this.cachedObservable = replaySubject
                 .doOnUnsubscribe(() -> {
-                    outstandingSubscriptions--;
-                    if (outstandingSubscriptions == 0) {
+                    if (outstandingSubscriptions.decrementAndGet() == 0) {
                         originalSubscription.unsubscribe();
                     }
                 })
-                .doOnSubscribe(() -> outstandingSubscriptions++);
+                .doOnSubscribe(() -> outstandingSubscriptions.getAndIncrement());
     }
 
     public static <R> HystrixCachedObservable<R> from(Observable<R> o, AbstractCommand<R> originalCommand) {

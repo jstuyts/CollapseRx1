@@ -20,6 +20,7 @@ import rx.Observable;
 import rx.subjects.ReplaySubject;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The Observable that represents a collapsed request sent back to a user.  It gets used by Collapser implementations
@@ -48,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
     private final ReplaySubject<T> subject = ReplaySubject.create();
     private final Observable<T> subjectWithAccounting;
 
-    private volatile int outstandingSubscriptions = 0;
+    private AtomicInteger outstandingSubscriptions = new AtomicInteger();
 
     public CollapsedRequestSubject(final R arg, final RequestBatch<?, T, R> containingBatch) {
         if (arg == RequestCollapser.NULL_SENTINEL) {
@@ -57,10 +58,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
             this.argument = arg;
         }
         this.subjectWithAccounting = subject
-                .doOnSubscribe(() -> outstandingSubscriptions++)
+                .doOnSubscribe(() -> outstandingSubscriptions.getAndIncrement())
                 .doOnUnsubscribe(() -> {
-                    outstandingSubscriptions--;
-                    if (outstandingSubscriptions == 0) {
+                    if (outstandingSubscriptions.decrementAndGet() == 0) {
                         containingBatch.remove(arg);
                     }
                 });
