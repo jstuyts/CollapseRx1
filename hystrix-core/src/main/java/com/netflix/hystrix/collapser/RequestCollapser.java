@@ -152,7 +152,6 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
                     }
                 } catch (Throwable t) {
                     logger.error("Error occurred trying to execute the batch.", t);
-                    t.printStackTrace();
                     // ignore error so we don't kill the Timer mainLoop and prevent further items from being scheduled
                 }
                 return null;
@@ -165,7 +164,6 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
                 callableWithContextOfParent.call();
             } catch (Exception e) {
                 logger.error("Error occurred trying to execute callable inside CollapsedTask from Timer.", e);
-                e.printStackTrace();
             }
         }
 
