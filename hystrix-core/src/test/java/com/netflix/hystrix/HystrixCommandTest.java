@@ -374,7 +374,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
 
     /**
-     * Test when a command fails to get queued up in the threadpool.
+     * Test when a command fails to get queued up in the thread pool.
      * <p>
      * We specifically want to protect against developers getting random thread exceptions and instead just correctly receiving HystrixRuntimeExceptions.
      */

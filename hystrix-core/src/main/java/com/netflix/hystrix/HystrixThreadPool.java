@@ -66,7 +66,7 @@ public interface HystrixThreadPool {
     void markThreadCompletion();
 
     /**
-     * Mark when a command gets rejected from the threadpool
+     * Mark when a command gets rejected from the thread pool
      */
     void markThreadRejection();
 
@@ -86,7 +86,7 @@ public interface HystrixThreadPool {
     /* package */ class Factory {
         /*
          * Use the String from HystrixThreadPoolKey.name() instead of the HystrixThreadPoolKey instance as it's just an interface and we can't ensure the object
-         * we receive implements hashcode/equals correctly and do not want the default hashcode/equals which would create a new threadpool for every object we get even if the name is the same
+         * we receive implements hashcode/equals correctly and do not want the default hashcode/equals which would create a new thread pool for every object we get even if the name is the same
          */
         /* package */final static ConcurrentHashMap<String, HystrixThreadPool> threadPools = new ConcurrentHashMap<>();
 
@@ -246,7 +246,7 @@ public interface HystrixThreadPool {
         }
 
         /**
-         * Whether the threadpool queue has space available according to the <code>queueSizeRejectionThreshold</code> settings.
+         * Whether the thread pool queue has space available according to the <code>queueSizeRejectionThreshold</code> settings.
          *
          * Note that the <code>queueSize</code> is an final instance variable on HystrixThreadPoolDefault, and not looked up dynamically.
          * The data structure is static, so this does not make sense as a dynamic lookup.

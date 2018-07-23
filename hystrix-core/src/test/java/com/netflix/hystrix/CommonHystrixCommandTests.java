@@ -180,7 +180,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
     }
 
     /**
-     * Threadpool with 1 thread, queue of size 1
+     * Thread pool with 1 thread, queue of size 1
      */
     protected static class SingleThreadedPoolWithQueue implements HystrixThreadPool {
 
@@ -236,7 +236,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
     }
 
     /**
-     * Threadpool with 1 thread, queue of size 1
+     * Thread pool with 1 thread, queue of size 1
      */
     protected static class SingleThreadedPoolWithNoQueue implements HystrixThreadPool {
 

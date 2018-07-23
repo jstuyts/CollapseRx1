@@ -110,7 +110,7 @@ public abstract class HystrixPropertiesChainedProperty {
         }
 
         /**
-         * @param r callback to execut
+         * @param r callback to execute
          */
         public void addCallback(Runnable r) {
             callbacks.add(r);

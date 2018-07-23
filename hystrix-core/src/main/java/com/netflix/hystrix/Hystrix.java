@@ -45,7 +45,7 @@ public class Hystrix {
     }
 
     /**
-     * Reset state and release resources in use (such as threadpools) and wait for completion.
+     * Reset state and release resources in use (such as thread pools) and wait for completion.
      * <p>
      * NOTE: This can result in race conditions if HystrixCommands are concurrently being executed.
      * </p>

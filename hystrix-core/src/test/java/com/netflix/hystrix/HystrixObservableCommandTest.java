@@ -885,7 +885,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
      * Test that synchronous BadRequestException behavior works the same on a cached response for a semaphore-isolated command.
      */
     @Test
-    public void testSyncBadRequestExceptionOnResponseFromCacheInSempahore() {
+    public void testSyncBadRequestExceptionOnResponseFromCacheInSemaphore() {
         testBadRequestExceptionOnResponseFromCache(ExecutionIsolationStrategy.SEMAPHORE, KnownHystrixBadRequestFailureTestCommand.SYNC_EXCEPTION);
     }
 

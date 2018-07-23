@@ -32,15 +32,15 @@ import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedPr
  * Default implementation of methods uses Archaius (https://github.com/Netflix/archaius)
  *
  * Note a change in behavior in 1.5.7.  Prior to that version, the configuration for 'coreSize' was used to control
- * both coreSize and maximumSize.  This is a fixed-size threadpool that can never give up an unused thread.  In 1.5.7+,
+ * both coreSize and maximumSize.  This is a fixed-size thread pool that can never give up an unused thread.  In 1.5.7+,
  * the values can diverge, and if you set coreSize < maximumSize, threads can be given up (subject to the keep-alive
  * time)
  *
  * It is OK to leave maximumSize unset using any version of Hystrix.  If you do, then maximum size will default to
- * core size and you'll have a fixed-size threadpool.
+ * core size and you'll have a fixed-size thread pool.
  *
  * If you accidentally set maximumSize < coreSize, then maximum will be raised to coreSize
- * (this prioritizes keeping extra threads around rather than inducing threadpool rejections)
+ * (this prioritizes keeping extra threads around rather than inducing thread pool rejections)
  */
 public abstract class HystrixThreadPoolProperties {
 
@@ -75,7 +75,7 @@ public abstract class HystrixThreadPoolProperties {
                 builder.getAllowMaximumSizeToDivergeFromCoreSize(), default_allow_maximum_size_to_diverge_from_core_size);
 
         this.corePoolSize = getProperty(propertyPrefix, key, "coreSize", builder.getCoreSize(), default_coreSize);
-        //this object always contains a reference to the configuration value for the maximumSize of the threadpool
+        //this object always contains a reference to the configuration value for the maximumSize of the thread pool
         //it only gets applied if allowMaximumSizeToDivergeFromCoreSize is true
         this.maximumPoolSize = getProperty(propertyPrefix, key, "maximumSize", builder.getMaximumSize(), default_maximumSize);
 
@@ -108,7 +108,7 @@ public abstract class HystrixThreadPoolProperties {
     }
 
     /**
-     * Maximum thread-pool size configured for threadpool.  May conflict with other config, so if you need the
+     * Maximum thread-pool size configured for thread pool.  May conflict with other config, so if you need the
      * actual value that gets passed to {@link ThreadPoolExecutor#setMaximumPoolSize(int)}, use {@link #actualMaximumSize()}
      *
      * @return {@code HystrixProperty<Integer>}
@@ -124,8 +124,8 @@ public abstract class HystrixThreadPoolProperties {
      * Cases:
      * 1) allowMaximumSizeToDivergeFromCoreSize == false: maximumSize is set to coreSize
      * 2) allowMaximumSizeToDivergeFromCoreSize == true, maximumSize >= coreSize: thread pool has different core/max sizes, so return the configured max
-     * 3) allowMaximumSizeToDivergeFromCoreSize == true, maximumSize < coreSize: threadpool incorrectly configured, use coreSize for max size
-     * @return actually configured maximum size of threadpool
+     * 3) allowMaximumSizeToDivergeFromCoreSize == true, maximumSize < coreSize: thread pool incorrectly configured, use coreSize for max size
+     * @return actually configured maximum size of thread pool
      */
     public Integer actualMaximumSize() {
         final int coreSize = coreSize().get();
@@ -153,7 +153,7 @@ public abstract class HystrixThreadPoolProperties {
     /**
      * Max queue size that gets passed to {@link BlockingQueue} in {@link HystrixConcurrencyStrategy#getBlockingQueue(int)}
      *
-     * This should only affect the instantiation of a threadpool - it is not eliglible to change a queue size on the fly.
+     * This should only affect the instantiation of a thread pool - it is not eligible to change a queue size on the fly.
      * For that, use {@link #queueSizeRejectionThreshold()}.
      * 
      * @return {@code HystrixProperty<Integer>}

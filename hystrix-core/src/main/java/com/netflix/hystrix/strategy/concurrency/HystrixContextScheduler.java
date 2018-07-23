@@ -31,7 +31,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Wrap a {@link Scheduler} so that scheduled actions are wrapped with {@link HystrixContexSchedulerAction} so that
+ * Wrap a {@link Scheduler} so that scheduled actions are wrapped with {@link HystrixContextSchedulerAction} so that
  * the {@link HystrixRequestContext} is properly copied across threads (if they are used by the {@link Scheduler}).
  */
 public class HystrixContextScheduler extends Scheduler {
@@ -92,7 +92,7 @@ public class HystrixContextScheduler extends Scheduler {
                     throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
                 }
             }
-            return worker.schedule(new HystrixContexSchedulerAction(concurrencyStrategy, action), delayTime, unit);
+            return worker.schedule(new HystrixContextSchedulerAction(concurrencyStrategy, action), delayTime, unit);
         }
 
         @Override
@@ -102,7 +102,7 @@ public class HystrixContextScheduler extends Scheduler {
                     throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
                 }
             }
-            return worker.schedule(new HystrixContexSchedulerAction(concurrencyStrategy, action));
+            return worker.schedule(new HystrixContextSchedulerAction(concurrencyStrategy, action));
         }
 
     }
